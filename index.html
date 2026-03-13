@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A "Normal" Platformer</title>
+<title>Floor lied</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -22,7 +22,6 @@ body {
   display:block;
   width:600px; height:360px;
   flex-shrink:0;
-  background:transparent;
 }
 /* floating in-game HUD above canvas */
 #hud {
@@ -1255,6 +1254,7 @@ function drawPlatform(pl) {
   if (pl._gone) return;
   let col = PLAT_COLORS.default;
   if (pl.color) col = pl.color;
+
   if (pl.special === 'collapse') {
     col = PLAT_COLORS.collapse;
     if (pl.collapseTimer > 0) {
@@ -1337,13 +1337,8 @@ function drawPlayer() {
 
 function render() {
   if (!lvl) return;
-  // Clear canvas so page bg (#7a5010) shows through holes
-  ctx.clearRect(0,0,W,H);
-  // Draw level bg only for the upper play area (above floor)
   ctx.fillStyle = lvl.bg || '#e8a84a';
-  ctx.fillRect(0,0,W,320);
-  // Bottom strip is left transparent — dark page bg shows as the "ground void"
-  // Platforms drawn on top will cover parts of it
+  ctx.fillRect(0,0,W,H);
 
   ctx.strokeStyle = 'rgba(255,255,255,0.025)';
   ctx.lineWidth = 1;
