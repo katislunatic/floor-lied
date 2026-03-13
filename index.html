@@ -358,13 +358,13 @@ function makeLevels() {
       ],
       jumpPads:[
         {x:110, y:316, w:50, h:10, boost:-13, color:'#00cc66',
-         ceilSpike:{x:91, y:28, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+         ceilSpike:{x:91, y:-200, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
         {x:250, y:316, w:50, h:10, boost:-13, color:'#00cc66',
-         ceilSpike:{x:231, y:28, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+         ceilSpike:{x:231, y:-200, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
         {x:375, y:316, w:50, h:10, boost:-13, color:'#ff6600',
-         ceilSpike:{x:356, y:28, w:88, h:22, active:true, color:'#cc3344'}, redPad:true},
+         ceilSpike:{x:356, y:20, w:88, h:22, active:true, color:'#cc3344'}, redPad:true},
         {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66',
-         ceilSpike:{x:459, y:28, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+         ceilSpike:{x:459, y:-200, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
       ],
       traps:[],
     },
@@ -895,11 +895,11 @@ function update() {
       if (onPad) {
         p.vy = jp.boost;
 
-        // GREEN: launch up, spike hidden at ceiling, starts sliding down when player hits near top
+        // GREEN: launch up, move spike to ceiling (invisible until it slides), start sliding when near top
         if (jp.triggersSpike && jp.ceilSpike && !jp.ceilSpike._triggered) {
           jp.ceilSpike._triggered = true;
           jp.ceilSpike.active = true;
-          jp.ceilSpike.y = 20;
+          jp.ceilSpike.y = 20;  // now at ceiling, but won't slide yet
           jp.ceilSpike._sliding = false;
           jp.ceilSpike._done = false;
           troll("helpful!");
@@ -1160,9 +1160,10 @@ function render() {
       if (jp.ceilSpike) {
         // red pad: always draw spike as long as it's on screen (even while retracting/returning)
         // green pad: only draw once triggered
+        // red: draw whenever on screen; green: only draw once triggered (spike moved to ceiling)
         const shouldDraw = jp.redPad
           ? (jp.ceilSpike.y > -jp.ceilSpike.h - 5)
-          : jp.ceilSpike.active;
+          : (jp.ceilSpike.active && jp.ceilSpike.y >= 0);
         if (shouldDraw) {
           drawSpikeTri(jp.ceilSpike.x, jp.ceilSpike.y, jp.ceilSpike.w, jp.ceilSpike.h, jp.ceilSpike.color, false);
         }
