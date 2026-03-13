@@ -10,26 +10,71 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   background:#111;
-  display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  min-height:100vh;
+  overflow:hidden;
   font-family:'Segoe UI',sans-serif;
   user-select:none;
 }
-#hud {
-  width:600px;
-  display:flex; justify-content:space-between; align-items:center;
-  padding:6px 0; color:#ccc; font-size:12px; font-weight:600; letter-spacing:1px;
+/* fullscreen game canvas */
+#c {
+  display:block;
+  position:fixed; inset:0;
+  width:100vw !important; height:100vh !important;
 }
-#hud span { color:#fff; }
+/* floating in-game HUD */
+#hud {
+  position:fixed; top:0; left:0; right:0;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 16px;
+  z-index:5;
+  pointer-events:none;
+  background:linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
+}
+#hud span { color:#fff; font-family:'Press Start 2P',monospace; font-size:9px; }
 #trollmsg {
-  color:#ffcc00; font-size:12px; font-weight:700;
+  color:#ffcc00; font-size:9px; font-weight:700;
+  font-family:'Press Start 2P',monospace;
   min-width:200px; text-align:center;
   text-shadow:0 0 8px #ff9900;
-  transition:opacity .2s;
 }
-canvas { display:block; border:2px solid #333; background:#1a1a2e; }
-#controls { color:#444; font-size:10px; margin-top:6px; letter-spacing:.5px; }
+#controls { display:none; }
+/* ESC / pause button */
+#pauseBtn {
+  position:fixed; top:10px; left:12px;
+  width:40px; height:40px;
+  background:rgba(80,20,0,0.85);
+  border:2px solid #c8901a;
+  border-radius:6px;
+  cursor:pointer; z-index:6;
+  display:none;
+  align-items:center; justify-content:center;
+  font-size:16px;
+  transition:background .1s;
+}
+#pauseBtn:hover { background:rgba(140,40,0,0.95); }
+/* pause overlay */
+#pauseOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.75);
+  display:none; flex-direction:column;
+  align-items:center; justify-content:center;
+  z-index:20;
+}
+#pauseOverlay h2 {
+  font-family:'Press Start 2P',monospace;
+  font-size:28px; color:#f0c060;
+  text-shadow:3px 3px 0 #5a0a00;
+  margin-bottom:32px;
+}
+.pause-btn {
+  font-family:'Press Start 2P',monospace;
+  font-size:10px; padding:12px 28px;
+  margin:6px;
+  background:#f0c060; color:#3a0500;
+  border:3px solid #5a0a00;
+  box-shadow:3px 3px 0 #3a0500;
+  cursor:pointer;
+}
+.pause-btn:hover { background:#fff8c0; }
 
 /* overlays */
 .overlay {
@@ -233,18 +278,50 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
   </div>
 </div>
 
+<canvas id="c"></canvas>
+
+<!-- floating HUD -->
 <div id="hud">
   <span id="levelName">LEVEL 1</span>
   <span id="trollmsg"></span>
   <span>DEATHS: <span id="deathNum">0</span></span>
 </div>
-<canvas id="c" width="600" height="360"></canvas>
-<div id="controls">ARROW KEYS / WASD — MOVE &amp; JUMP &nbsp;|&nbsp; SPACE — JUMP</div>
+
+<!-- pause button (top-left, shown during gameplay) -->
+<button id="pauseBtn" title="Pause (ESC)">⏸</button>
+
+<!-- pause menu -->
+<div id="pauseOverlay">
+  <h2>PAUSED</h2>
+  <button class="pause-btn" id="pauseResumeBtn">▶ RESUME</button>
+  <button class="pause-btn" id="pauseLevelsBtn">SELECT LEVEL</button>
+  <button class="pause-btn" id="pauseRestartBtn">↺ RESTART</button>
+</div>
+
+<div id="controls"></div>
 
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-const W = 600, H = 360;
+const W = 600, H = 360; // logical game size — we scale to fill screen
+
+function resizeCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// Scale ctx so game world (600x360) fills the screen, letterboxed
+function applyScale() {
+  const scaleX = canvas.width  / W;
+  const scaleY = canvas.height / H;
+  const scale  = Math.min(scaleX, scaleY);
+  const offX   = (canvas.width  - W * scale) / 2;
+  const offY   = (canvas.height - H * scale) / 2;
+  ctx.setTransform(scale, 0, 0, scale, offX, offY);
+  return {scale, offX, offY};
+}
 
 // ─── state ────────────────────────────────────────────────────────────────────
 let totalDeaths = 0;
@@ -1274,6 +1351,11 @@ function drawPlayer() {
 
 function render() {
   if (!lvl) return;
+  // clear entire canvas (full screen) then scale to game world
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle = lvl.bg || '#1a1a2e';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  applyScale();
   ctx.fillStyle = lvl.bg || '#1a1a2e';
   ctx.fillRect(0,0,W,H);
 
@@ -1413,8 +1495,10 @@ function render() {
 
 // ─── loop ─────────────────────────────────────────────────────────────────────
 function loop() {
-  update();
-  render();
+  if (!paused) {
+    update();
+    render();
+  }
   if (gameActive) requestAnimationFrame(loop);
 }
 
@@ -1531,6 +1615,7 @@ function buildLevelSelect() {
 }
 
 function showLevelSelect() {
+  document.getElementById('pauseBtn').style.display = 'none';
   document.getElementById('levelSelectOverlay').style.display = 'flex';
   buildLevelSelect();
 }
@@ -1539,9 +1624,36 @@ function hideLevelSelect() {
   document.getElementById('levelSelectOverlay').style.display = 'none';
 }
 
+// ─── pause ────────────────────────────────────────────────────────────────────
+let paused = false;
+
+function setPaused(val) {
+  paused = val;
+  document.getElementById('pauseOverlay').style.display = val ? 'flex' : 'none';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Escape' && gameActive) {
+    setPaused(!paused);
+  }
+});
+document.getElementById('pauseBtn').addEventListener('click', () => setPaused(true));
+document.getElementById('pauseResumeBtn').addEventListener('click', () => setPaused(false));
+document.getElementById('pauseLevelsBtn').addEventListener('click', () => {
+  setPaused(false);
+  gameActive = false;
+  document.getElementById('pauseBtn').style.display = 'none';
+  showLevelSelect();
+});
+document.getElementById('pauseRestartBtn').addEventListener('click', () => {
+  setPaused(false);
+  loadLevel(curLevel);
+});
+
 function startFromLevel(idx) {
   curLevel = idx; totalDeaths = 0;
   document.getElementById('deathNum').textContent = '0';
+  document.getElementById('pauseBtn').style.display = 'flex';
   loadLevel(idx);
   gameActive = true;
   loop();
