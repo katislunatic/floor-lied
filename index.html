@@ -1741,53 +1741,60 @@ window.showWin = function() {
   _origShowWin();
 };
 
-// ─── menu keyboard cursor ─────────────────────────────────────────────────────
+// ─── custom cursor (mouse + keyboard controlled) ─────────────────────────────
 (function() {
-  // Virtual cursor — only active when game is not running
+  // Hide the real cursor everywhere
+  document.documentElement.style.cursor = 'none';
+
   const cur = document.createElement('div');
-  cur.id = 'menuCursor';
+  cur.id = 'customCursor';
   cur.style.cssText = `
-    position:fixed; width:16px; height:16px; z-index:9999; pointer-events:none;
-    transition: left 0.05s, top 0.05s;
+    position:fixed; width:20px; height:20px; z-index:99999;
+    pointer-events:none; left:0; top:0;
+    transform: translate(-2px, -2px);
   `;
-  cur.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="0,0 0,14 4,10 7,16 9,15 6,9 11,9" fill="#f0c060" stroke="#3a0500" stroke-width="1.2"/>
+  cur.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="2,1 2,17 6,12 9,19 12,18 9,11 15,11" fill="#f0c060" stroke="#3a0500" stroke-width="1.5"/>
   </svg>`;
   document.body.appendChild(cur);
 
   let cx = window.innerWidth / 2;
   let cy = window.innerHeight / 2;
-  const SPEED = 8;
+  const SPEED = 7;
   const held = {};
 
+  // Follow real mouse
+  document.addEventListener('mousemove', e => {
+    cx = e.clientX;
+    cy = e.clientY;
+  });
+
+  // Track keys for keyboard movement
   document.addEventListener('keydown', e => { held[e.code] = true; });
   document.addEventListener('keyup',   e => { held[e.code] = false; });
 
   function menuActive() {
-    return !gameActive ||
-      document.getElementById('startOverlay').style.display !== 'none' ||
-      document.getElementById('levelSelectOverlay').style.display !== 'none';
+    return document.getElementById('startOverlay').style.display !== 'none' ||
+      document.getElementById('levelSelectOverlay').style.display !== 'none' ||
+      document.getElementById('pauseOverlay').style.display === 'flex' ||
+      document.getElementById('winOverlay').style.display !== 'none';
   }
 
   function tick() {
-    if (menuActive()) {
-      cur.style.display = 'block';
-      if (held['ArrowLeft']  || held['KeyA']) cx -= SPEED;
-      if (held['ArrowRight'] || held['KeyD']) cx += SPEED;
-      if (held['ArrowUp']    || held['KeyW']) cy -= SPEED;
-      if (held['ArrowDown']  || held['KeyS']) cy += SPEED;
-      cx = Math.max(0, Math.min(window.innerWidth-2,  cx));
-      cy = Math.max(0, Math.min(window.innerHeight-2, cy));
-      cur.style.left = cx + 'px';
-      cur.style.top  = cy + 'px';
-    } else {
-      cur.style.display = 'none';
-    }
+    // Keyboard nudge — always works for cursor movement
+    if (held['ArrowLeft'])  cx -= SPEED;
+    if (held['ArrowRight']) cx += SPEED;
+    if (held['ArrowUp'])    cy -= SPEED;
+    if (held['ArrowDown'])  cy += SPEED;
+    cx = Math.max(0, Math.min(window.innerWidth  - 2, cx));
+    cy = Math.max(0, Math.min(window.innerHeight - 2, cy));
+    cur.style.left = cx + 'px';
+    cur.style.top  = cy + 'px';
     requestAnimationFrame(tick);
   }
   tick();
 
-  // Space = click whatever is under the cursor
+  // Space = click under cursor (on menus/pause)
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && menuActive()) {
       e.preventDefault();
@@ -1795,6 +1802,8 @@ window.showWin = function() {
       if (el) el.click();
     }
   });
+
+  // Real mouse click still works normally — just pass through since pointer-events:none
 })();
 
 // ─── start ────────────────────────────────────────────────────────────────────
