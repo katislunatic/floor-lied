@@ -22,6 +22,7 @@ body {
   display:block;
   width:600px; height:360px;
   flex-shrink:0;
+  background:transparent;
 }
 /* floating in-game HUD above canvas */
 #hud {
@@ -1336,6 +1337,9 @@ function drawPlayer() {
 
 function render() {
   if (!lvl) return;
+  // Clear entire canvas (transparent) so page bg shows through holes
+  ctx.clearRect(0,0,W,H);
+  // Fill only the playable area above the floor line with the level bg color
   ctx.fillStyle = lvl.bg || '#e8a84a';
   ctx.fillRect(0,0,W,H);
 
