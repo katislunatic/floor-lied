@@ -3,54 +3,56 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A "Normal" Platformer</title>
+<title>FLOOR LIED</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
-  background:#111;
-  overflow:hidden;
+  background:#7a5010;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  min-height:100vh;
   font-family:'Segoe UI',sans-serif;
   user-select:none;
+  overflow:hidden;
 }
-/* fullscreen game canvas */
+/* fixed game canvas — centered, surrounded by warm bg */
 #c {
   display:block;
-  position:fixed; inset:0;
-  width:100vw !important; height:100vh !important;
+  width:600px; height:360px;
+  flex-shrink:0;
 }
-/* floating in-game HUD */
+/* floating in-game HUD above canvas */
 #hud {
-  position:fixed; top:0; left:0; right:0;
+  width:600px;
   display:flex; justify-content:space-between; align-items:center;
-  padding:10px 16px;
+  padding:6px 4px;
   z-index:5;
   pointer-events:none;
-  background:linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%);
 }
-#hud span { color:#fff; font-family:'Press Start 2P',monospace; font-size:9px; }
+#hud span { color:#fff; font-family:'Press Start 2P',monospace; font-size:8px; text-shadow:1px 1px 0 #000; }
 #trollmsg {
-  color:#ffcc00; font-size:9px; font-weight:700;
+  color:#ffcc00; font-size:8px; font-weight:700;
   font-family:'Press Start 2P',monospace;
   min-width:200px; text-align:center;
   text-shadow:0 0 8px #ff9900;
 }
 #controls { display:none; }
-/* ESC / pause button */
+/* ESC / pause button — sits top-left of the canvas area */
 #pauseBtn {
-  position:fixed; top:10px; left:12px;
-  width:40px; height:40px;
-  background:rgba(80,20,0,0.85);
+  position:fixed; top:10px; left:calc(50vw - 300px);
+  width:38px; height:38px;
+  background:rgba(80,20,0,0.9);
   border:2px solid #c8901a;
   border-radius:6px;
   cursor:pointer; z-index:6;
   display:none;
   align-items:center; justify-content:center;
-  font-size:16px;
+  font-size:15px;
   transition:background .1s;
 }
-#pauseBtn:hover { background:rgba(140,40,0,0.95); }
+#pauseBtn:hover { background:rgba(160,50,0,0.95); }
 /* pause overlay */
 #pauseOverlay {
   position:fixed; inset:0;
@@ -303,25 +305,8 @@ body {
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-const W = 600, H = 360; // logical game size — we scale to fill screen
-
-function resizeCanvas() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
-
-// Scale ctx so game world (600x360) fills the screen, letterboxed
-function applyScale() {
-  const scaleX = canvas.width  / W;
-  const scaleY = canvas.height / H;
-  const scale  = Math.min(scaleX, scaleY);
-  const offX   = (canvas.width  - W * scale) / 2;
-  const offY   = (canvas.height - H * scale) / 2;
-  ctx.setTransform(scale, 0, 0, scale, offX, offY);
-  return {scale, offX, offY};
-}
+canvas.width = 600; canvas.height = 360;
+const W = 600, H = 360;
 
 // ─── state ────────────────────────────────────────────────────────────────────
 let totalDeaths = 0;
@@ -364,7 +349,7 @@ function makeLevels() {
     // ── 1: Floor looks fine — one hole punches open mid-run ──────────────────
     {
       name:"1 - JUST WALK",
-      bg:'#1a1a2e',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -379,7 +364,7 @@ function makeLevels() {
     // ── 2: Ceiling drops ──────────────────────────────────────────────────────
     {
       name:"2 - LOW CEILING",
-      bg:'#1a1a30',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -397,7 +382,7 @@ function makeLevels() {
     // ── 3: Collapse tile ──────────────────────────────────────────────────────
     {
       name:"3 - NORMAL FLOOR",
-      bg:'#1e2030',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -411,7 +396,7 @@ function makeLevels() {
     // ── 4: Gap + wall spike ───────────────────────────────────────────────────
     {
       name:"4 - EASY GAP",
-      bg:'#1a2020',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -430,7 +415,7 @@ function makeLevels() {
     // ── 5: Invisible pit ─────────────────────────────────────────────────────
     {
       name:"5 - SOLID FLOOR",
-      bg:'#201830',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -445,7 +430,7 @@ function makeLevels() {
     // ── 6: Teleport pad ───────────────────────────────────────────────────────
     {
       name:"6 - ALMOST THERE",
-      bg:'#201a20',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[520,230],
       platforms:[
@@ -462,7 +447,7 @@ function makeLevels() {
     // ── 7: Drop spikes ────────────────────────────────────────────────────────
     {
       name:"7 - OPEN ROOM",
-      bg:'#1a2018',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -483,7 +468,7 @@ function makeLevels() {
     // ── 8: Sliding platform ───────────────────────────────────────────────────
     {
       name:"8 - MOVING PLATFORM",
-      bg:'#201820',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -500,7 +485,7 @@ function makeLevels() {
     // ── 9: Controls flip ──────────────────────────────────────────────────────
     {
       name:"9 - EASY ROOM",
-      bg:'#182028',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -516,7 +501,7 @@ function makeLevels() {
     // ── 10: Door runs away — hole opens only after door has moved, when you get close ─
     {
       name:"10 - FINISH LINE",
-      bg:'#201c18',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[490,290],
       platforms:[
@@ -533,7 +518,7 @@ function makeLevels() {
     // ── 11: Platform spike from above ────────────────────────────────────────
     {
       name:"11 - CHOOSE WISELY",
-      bg:'#1c1c28',
+      bg:'#e8a84a',
       spawn:[30,200],
       door:[548,200],
       platforms:[
@@ -551,7 +536,7 @@ function makeLevels() {
     // ── 12: Floor slides right — PATCHED: speed bumped from 1.4 → 3.2 ────────
     {
       name:"12 - SOLID GROUND",
-      bg:'#181c20',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[530,258],
       platforms:[
@@ -567,7 +552,7 @@ function makeLevels() {
     // ── 13: Coins reveal spikes ───────────────────────────────────────────────
     {
       name:"13 - FREE COINS!",
-      bg:'#20201a',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -591,7 +576,7 @@ function makeLevels() {
     // ── 14: Jump pads — green launches you into ceiling spikes, red looks deadly but moves spike away ─
     {
       name:"14 - HELPFUL JUMP PAD",
-      bg:'#1c201c',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -613,7 +598,7 @@ function makeLevels() {
     // ── 15: Moving wall ───────────────────────────────────────────────────────
     {
       name:"15 - WIDE OPEN",
-      bg:'#201820',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[500,268],
       platforms:[
@@ -632,7 +617,7 @@ function makeLevels() {
     // ── 16: Collapse bridges ──────────────────────────────────────────────────
     {
       name:"16 - FLOATING ISLAND",
-      bg:'#181a24',
+      bg:'#e8a84a',
       spawn:[30,270],
       door:[548,268],
       platforms:[
@@ -648,7 +633,7 @@ function makeLevels() {
     // ── 17: Two wall spikes ───────────────────────────────────────────────────
     {
       name:"17 - HALLWAY",
-      bg:'#20181a',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -669,7 +654,7 @@ function makeLevels() {
     // ── 18: Floor collapses near door ─────────────────────────────────────────
     {
       name:"18 - SO CLOSE",
-      bg:'#1c201e',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[498,230],
       platforms:[
@@ -686,7 +671,7 @@ function makeLevels() {
     // ── 19: Controls flip after first gap ─────────────────────────────────────
     {
       name:"19 - NORMAL LEVEL",
-      bg:'#1e1c20',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -703,7 +688,7 @@ function makeLevels() {
     // ── 20: Drop spikes + wall spike ─────────────────────────────────────────
     {
       name:"20 - GRAND FINALE",
-      bg:'#200a0a',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,220],
       platforms:[
@@ -729,7 +714,7 @@ function makeLevels() {
     // ── 21: Invisible platforms ───────────────────────────────────────────────
     {
       name:"21 - TRUST YOUR GUT",
-      bg:'#0a0a20',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[488,158],
       platforms:[
@@ -747,7 +732,7 @@ function makeLevels() {
     // ── 22: Gravity flip ──────────────────────────────────────────────────────
     {
       name:"22 - SMOOTH SAILING",
-      bg:'#0a1a1a',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[540,28],
       platforms:[
@@ -763,7 +748,7 @@ function makeLevels() {
     // ── 23: Alternating collapse tiles ────────────────────────────────────────
     {
       name:"23 - STURDY TILES",
-      bg:'#181824',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -783,7 +768,7 @@ function makeLevels() {
     // Each pit is 55px wide — jumpable but you have to react fast.
     {
       name:"24 - SOLID FLOOR",
-      bg:'#1a1a20',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,290],
       platforms:[
@@ -802,7 +787,7 @@ function makeLevels() {
     // ── 25: Grand finale ──────────────────────────────────────────────────────
     {
       name:"25 - THE END (for real)",
-      bg:'#0f0a0f',
+      bg:'#e8a84a',
       spawn:[30,290],
       door:[548,168],
       platforms:[
@@ -1351,11 +1336,6 @@ function drawPlayer() {
 
 function render() {
   if (!lvl) return;
-  // clear entire canvas (full screen) then scale to game world
-  ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle = lvl.bg || '#1a1a2e';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  applyScale();
   ctx.fillStyle = lvl.bg || '#1a1a2e';
   ctx.fillRect(0,0,W,H);
 
