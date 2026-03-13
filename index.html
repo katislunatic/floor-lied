@@ -374,17 +374,17 @@ function makeLevels() {
       name:"15 - WIDE OPEN",
       bg:'#201820',
       spawn:[30,290],
-      door:[500,200],
+      door:[500,268],
       platforms:[
         {x:0,   y:320, w:600, h:40},
-        {x:480, y:220, w:120, h:20},
+        {x:480, y:288, w:120, h:20},
       ],
       movingWalls:[
         {x:640, y:0, w:40, h:H, vx:0, active:false, color:'#cc3344'}
       ],
       traps:[
         { trigger:'playerX', val:280, fired:false,
-          action:'activateWall', idx:0, speed:-2.0, msg:"keep going!" }
+          action:'activateWall', idx:0, speed:-1.2, msg:"keep going!" }
       ],
     },
 
