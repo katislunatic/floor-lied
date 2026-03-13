@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Floor Lied — A Troll Platformer</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#111;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  min-height:100vh;
+  font-family:'Segoe UI',sans-serif;
+  user-select:none;
+}
+#hud {
+  width:600px;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 0; color:#ccc; font-size:12px; font-weight:600; letter-spacing:1px;
+}
+#hud span { color:#fff; }
+#trollmsg {
+  color:#ffcc00; font-size:12px; font-weight:700;
+  min-width:200px; text-align:center;
+  text-shadow:0 0 8px #ff9900;
+  transition:opacity .2s;
+}
+canvas { display:block; border:2px solid #333; background:#1a1a2e; }
+#controls { color:#444; font-size:10px; margin-top:6px; letter-spacing:.5px; }
+
+/* overlays */
+.overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.88);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  z-index:10;
+}
+.overlay h1 { font-size:32px; color:#fff; margin-bottom:8px; letter-spacing:2px; }
+.overlay .sub { font-size:13px; color:#888; margin-bottom:4px; line-height:1.8; text-align:center; }
+.overlay .warn { color:#ff4444; font-size:12px; margin-top:4px; }
+.btn {
+  margin-top:20px; padding:12px 32px;
+  background:#fff; color:#000;
+  border:none; font-size:13px; font-weight:700;
+  cursor:pointer; letter-spacing:1px;
+  transition:background .15s, color .15s;
+}
+.btn:hover { background:#ffcc00; }
+#winOverlay { display:none; }
+#winOverlay h1 { color:#00ff99; }
+#winDeaths { color:#aaa; font-size:13px; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div class="overlay" id="startOverlay">
+  <h1>FLOOR LIED</h1>
+  <div class="sub">It's just a normal platformer.<br>Get to the door. That's all.</div>
+  <div class="warn">← → to move &nbsp;|&nbsp; ↑ or Space to jump</div>
+  <button class="btn" id="startBtn">PLAY</button>
+</div>
+
+<div class="overlay" id="winOverlay">
+  <h1>YOU WIN!</h1>
+  <div class="sub">You actually made it.<br>Honestly didn't expect that.</div>
+  <div id="winDeaths"></div>
+  <button class="btn" id="restartBtn">PLAY AGAIN</button>
+</div>
+
+<div id="hud">
+  <span id="levelName">LEVEL 1</span>
+  <span id="trollmsg"></span>
+  <span>DEATHS: <span id="deathNum">0</span></span>
+</div>
+<canvas id="c" width="600" height="360"></canvas>
+<div id="controls">ARROW KEYS / WASD — MOVE &amp; JUMP &nbsp;|&nbsp; SPACE — JUMP</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const W = 600, H = 360;
+
+// ─── state ────────────────────────────────────────────────────────────────────
+let totalDeaths = 0;
+let curLevel = 0;
+let gameActive = false;
+let frame = 0;
+let trollTimeout = null;
+
+// ─── input ────────────────────────────────────────────────────────────────────
+const K = {};
+document.addEventListener('keydown', e => { K[e.code] = true; });
+document.addEventListener('keyup',   e => { K[e.code] = false; });
+const left  = () => K['ArrowLeft']  || K['KeyA'];
+const right = () => K['ArrowRight'] || K['KeyD'];
+const jump  = () => K['ArrowUp']    || K['KeyW'] || K['Space'];
+
+// ─── player ───────────────────────────────────────────────────────────────────
+let p = {};
+function spawnPlayer(x, y) {
+  p = { x, y, w:18, h:24, vx:0, vy:0, grounded:false, dead:false, deadTimer:0 };
+}
+
+// ─── troll messages ───────────────────────────────────────────────────────────
+const msgs = ["lol","nice try","skill issue","trust nobody","you good?","bro...",
+  "the floor said no","didn't see that?","classic","almost!","close one",
+  "it looked safe though","gravity is just a suggestion","read the room",
+  "maybe slow down","you'll get it","eventually","🤡","the door moved lol",
+  "what if i told you","that was on purpose","oops","heh","nah","frfr"];
+function troll(msg) {
+  clearTimeout(trollTimeout);
+  const el = document.getElementById('trollmsg');
+  el.textContent = msg || msgs[Math.floor(Math.random()*msgs.length)];
+  trollTimeout = setTimeout(() => el.textContent = '', 2500);
+}
+
+// ─── level definitions ────────────────────────────────────────────────────────
+// Each level: platforms, door position, spawn position, and traps list
+// Traps fire based on conditions (player X crossing a threshold, timer, etc.)
+// Visually levels look SIMPLE — wide flat floor, a few platforms, clear path to door
+
+function makeLevels() {
+  return [
+
+    // ── 1: Floor looks fine — one hole punches open mid-run ──────────────────
+    // Gap is 70px. Player speed ~3.4px/frame, jump clears ~110px. Totally beatable.
+    {
+      name:"1 - JUST WALK",
+      bg:'#1a1a2e',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+      ],
+      traps:[
+        { trigger:'playerX', val:240, fired:false,
+          action:'removeFloorChunk', cx:280, cw:70, msg:"the floor said no" }
+      ],
+    },
+
+    // ── 2: Ceiling drops — but only crushes if you jump ──────────────────────
+    // Ceiling stops at y=272. Floor at 320. Player h=24. Gap = 24px = just enough to stand, not jump.
+    // If you jump you die. The troll: you naturally try to jump the ceiling, which kills you.
+    {
+      name:"2 - LOW CEILING",
+      bg:'#1a1a30',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      extraRects:[
+        {x:0, y:0, w:600, h:20, color:'#3a3a5c'},
+      ],
+      traps:[
+        { trigger:'playerX', val:180, fired:false,
+          action:'ceilingDrop', targetY:272, msg:"don't jump" }
+      ],
+    },
+
+    // ── 3: One collapse tile — visually same colour, gives 38 frames to hop off
+    {
+      name:"3 - NORMAL FLOOR",
+      bg:'#1e2030',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:230, h:40},
+        {x:250, y:320, w:55,  h:40, special:'collapse', collapseTimer:-1},
+        {x:325, y:320, w:275, h:40},
+      ],
+      traps:[],
+    },
+
+    // ── 4: Gap to jump — wall spike fires the moment you leave the edge ───────
+    // Spike travels at speed 2.2, height 230–270 — you can jump OVER it or stay low.
+    {
+      name:"4 - EASY GAP",
+      bg:'#1a2020',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:210, h:40},
+        {x:290, y:320, w:310, h:40},
+      ],
+      wallSpikes:[
+        {x:-44, y:228, w:44, h:36, vx:2.2, active:false, done:false, color:'#cc3344'}
+      ],
+      traps:[
+        { trigger:'playerX', val:175, fired:false,
+          action:'activateWallSpike', idx:0, msg:"incoming" }
+      ],
+    },
+
+    // ── 5: Flat floor with ONE invisible pit — 72px wide, jumpable ───────────
+    {
+      name:"5 - SOLID FLOOR",
+      bg:'#201830',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      invisPits:[
+        {x:285, y:320, w:72, h:40}
+      ],
+      traps:[],
+    },
+
+    // ── 6: Teleport pad kills your progress — real path is jump OVER it ───────
+    // Safe stone at 340, teleport pad at 480, door at y=230 above.
+    // You CAN reach the door by jumping from the safe stone directly — skip the trap pad.
+    {
+      name:"6 - ALMOST THERE",
+      bg:'#201a20',
+      spawn:[30,290],
+      door:[520,230],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+        {x:330, y:272, w:100, h:20},
+        {x:470, y:244, w:110, h:20},
+      ],
+      teleportPads:[
+        {x:470, y:244, w:110, h:20, destX:30, destY:290, msg:"nope"}
+      ],
+      traps:[],
+    },
+
+    // ── 7: Drop spikes, one per zone — easy to dodge by stopping between ──────
+    {
+      name:"7 - OPEN ROOM",
+      bg:'#1a2018',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      dropSpikes:[
+        {x:192, y:-24, w:22, h:22, vy:0, active:false, fallen:false, color:'#cc3344'},
+        {x:328, y:-24, w:22, h:22, vy:0, active:false, fallen:false, color:'#cc3344'},
+        {x:462, y:-24, w:22, h:22, vy:0, active:false, fallen:false, color:'#cc3344'},
+      ],
+      traps:[
+        { trigger:'playerX', val:155, fired:false, action:'dropSpike', idx:0, msg:"heads up" },
+        { trigger:'playerX', val:295, fired:false, action:'dropSpike', idx:1, msg:null },
+        { trigger:'playerX', val:428, fired:false, action:'dropSpike', idx:2, msg:"still going?" },
+      ],
+    },
+
+    // ── 8: Sliding platform — moves right slowly, you must jump off before gap ─
+    // Start platform ends at x=120. Slide plat starts at 175, slides right.
+    // Right landing at x=440. Plenty wide.
+    {
+      name:"8 - MOVING PLATFORM",
+      bg:'#201820',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:120, h:40},
+        {x:175, y:308, w:130, h:32, special:'slideRight', vx:0, maxX:440},
+        {x:440, y:320, w:160, h:40},
+      ],
+      traps:[
+        { trigger:'playerX', val:130, fired:false,
+          action:'startSlide', idx:1, speed:1.6, msg:"hold on" }
+      ],
+    },
+
+    // ── 9: Controls flip — gap to cross after flip, door is right there ───────
+    // Floor has a gap at 400–450. Flip fires at x=300. After flip, press LEFT to go right.
+    // Gap is 50px — jumpable even with flipped controls once you figure it out.
+    {
+      name:"9 - EASY ROOM",
+      bg:'#182028',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:390, h:40},
+        {x:450, y:320, w:150, h:40},
+      ],
+      traps:[
+        { trigger:'playerX', val:300, fired:false,
+          action:'flipControls', msg:"wait... left is right?" }
+      ],
+    },
+
+    // ── 10: Door runs away — but only moves ONCE, to x=30, floor is safe ──────
+    {
+      name:"10 - FINISH LINE",
+      bg:'#201c18',
+      spawn:[30,290],
+      door:[490,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      traps:[
+        { trigger:'playerX', val:400, fired:false,
+          action:'moveDoor', newX:30, newY:290, msg:"door said no" }
+      ],
+    },
+
+    // ── 11: 4 platforms — step on the 3rd one and a spike drops from above ────
+    // Spike speed 3 — player has ~25 frames to hop to plat 4 before it arrives.
+    {
+      name:"11 - CHOOSE WISELY",
+      bg:'#1c1c28',
+      spawn:[30,200],
+      door:[548,200],
+      platforms:[
+        {x:0,   y:240, w:120, h:20},
+        {x:160, y:240, w:120, h:20},
+        {x:320, y:240, w:120, h:20},  // trap — spike drops
+        {x:480, y:240, w:120, h:20},
+        {x:0,   y:320, w:600, h:40},
+      ],
+      traps:[
+        { trigger:'playerStandOn', platIdx:2, fired:false,
+          action:'spikeFromAbove', tx:320, ty:-60, tw:120, th:16, speed:3, msg:"wrong one" }
+      ],
+    },
+
+    // ── 12: Full floor slides right — there's a fixed ledge at 460 to jump to ─
+    // Floor slides at 1.4px/frame. Fixed ledge at x=460,y=280 never moves. Door on it.
+    {
+      name:"12 - SOLID GROUND",
+      bg:'#181c20',
+      spawn:[30,290],
+      door:[530,258],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+        {x:460, y:278, w:140, h:20},  // this one is FIXED — doesn't slide
+      ],
+      traps:[
+        { trigger:'playerX', val:190, fired:false,
+          action:'floorSlide', speed:1.4, msg:"the floor is lying" }
+      ],
+    },
+
+    // ── 13: Coins reveal two spike patches — gap between them is 80px ─────────
+    {
+      name:"13 - FREE COINS!",
+      bg:'#20201a',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      coins:[
+        {x:120,y:278,r:8,alive:true},{x:185,y:278,r:8,alive:true},
+        {x:250,y:278,r:8,alive:true},{x:315,y:278,r:8,alive:true},
+        {x:380,y:278,r:8,alive:true},
+      ],
+      hiddenSpikes:[
+        {x:408, y:308, w:58, h:12, revealed:false, color:'#cc3344'},
+        {x:496, y:308, w:58, h:12, revealed:false, color:'#cc3344'},
+      ],
+      traps:[
+        { trigger:'coinCollect', coinIdx:3, fired:false,
+          action:'revealSpikes', msg:"free coins they said" }
+      ],
+    },
+
+    // ── 14: Jump pads — green = safe, orange = ceiling spike at y=28 ──────────
+    // Boost is -13 so player peaks around y=150. Spike is at y=28,h=22 → top is y=28.
+    // Player only dies if they go very high, which they do on orange (boost -16). Dodge = don't use it.
+    {
+      name:"14 - HELPFUL JUMP PAD",
+      bg:'#1c201c',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      jumpPads:[
+        {x:110, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+        {x:250, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+        {x:375, y:316, w:50, h:10, boost:-16, color:'#ff6600',
+         ceilSpike:{x:356, y:28, w:88, h:22, active:true, color:'#cc3344'}},
+        {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+      ],
+      traps:[],
+    },
+
+    // ── 15: REDESIGNED — wall comes from RIGHT, door is on RIGHT side up top ───
+    // Player spawns left. Wall activates when they reach x=300 (halfway).
+    // The door is at x=520, y=200 on a platform at y=220 — to the RIGHT, near the wall.
+    // Strategy: RUSH RIGHT, jump to the ledge, enter door BEFORE the wall reaches you.
+    // Wall speed -2.0 starts at x=600, door ledge at x=480. Player has ~60 frames.
+    {
+      name:"15 - WIDE OPEN",
+      bg:'#201820',
+      spawn:[30,290],
+      door:[500,200],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+        {x:480, y:220, w:120, h:20},
+      ],
+      movingWalls:[
+        {x:640, y:0, w:40, h:H, vx:0, active:false, color:'#cc3344'}
+      ],
+      traps:[
+        { trigger:'playerX', val:280, fired:false,
+          action:'activateWall', idx:0, speed:-2.0, msg:"keep going!" }
+      ],
+    },
+
+    // ── 16: Collapse bridges over lava — 38-frame window, gaps are jumpable ───
+    {
+      name:"16 - FLOATING ISLAND",
+      bg:'#181a24',
+      spawn:[30,270],
+      door:[548,268],
+      platforms:[
+        {x:0,   y:300, w:120, h:20},
+        {x:155, y:280, w:105, h:16, special:'collapse', collapseTimer:-1},
+        {x:295, y:280, w:105, h:16, special:'collapse', collapseTimer:-1},
+        {x:435, y:280, w:130, h:20},
+        {x:0,   y:348, w:600, h:12, deadly:true, color:'#8b1a1a'},
+      ],
+      traps:[],
+    },
+
+    // ── 17: Two wall spikes fire in sequence — dodge right, then left ─────────
+    {
+      name:"17 - HALLWAY",
+      bg:'#20181a',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+        {x:0,   y:0,   w:20,  h:360, color:'#2a2a3a'},
+        {x:580, y:0,   w:20,  h:360, color:'#2a2a3a'},
+      ],
+      wallSpikes:[
+        {x:-52, y:162, w:52, h:116, vx:2.8, active:false, done:false, color:'#cc3344'},
+        {x:600, y:162, w:52, h:116, vx:-2.8, active:false, done:false, color:'#cc3344'},
+      ],
+      traps:[
+        { trigger:'playerX', val:180, fired:false, action:'activateWallSpike', idx:0, msg:"from the left!" },
+        { trigger:'playerX', val:370, fired:false, action:'activateWallSpike', idx:1, msg:"now from the right!" },
+      ],
+    },
+
+    // ── 18: Floor collapses near door — there's a ledge above to land on ──────
+    {
+      name:"18 - SO CLOSE",
+      bg:'#1c201e',
+      spawn:[30,290],
+      door:[498,230],
+      platforms:[
+        {x:0,   y:320, w:420, h:40},
+        {x:420, y:320, w:180, h:40, special:'collapse', collapseTimer:-1},
+        {x:455, y:258, w:145, h:20},
+      ],
+      traps:[
+        { trigger:'playerX', val:385, fired:false,
+          action:'collapseFloor', platIdx:1, msg:"almost had it" }
+      ],
+    },
+
+    // ── 19: Controls flip AFTER the first gap — second gap needs flipped logic ─
+    {
+      name:"19 - NORMAL LEVEL",
+      bg:'#1e1c20',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:220, h:40},
+        {x:270, y:320, w:220, h:40},
+        {x:540, y:320, w:60,  h:40},
+      ],
+      traps:[
+        { trigger:'playerX', val:370, fired:false,
+          action:'flipControls', msg:"why did i go right" }
+      ],
+    },
+
+    // ── 20: Three drop spikes, then a wall spike — spaced so you can weave ────
+    {
+      name:"20 - GRAND FINALE",
+      bg:'#200a0a',
+      spawn:[30,290],
+      door:[548,220],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+        {x:460, y:248, w:140, h:20},
+      ],
+      dropSpikes:[
+        {x:145,y:-24,w:22,h:22,vy:0,active:false,fallen:false,color:'#cc3344'},
+        {x:282,y:-24,w:22,h:22,vy:0,active:false,fallen:false,color:'#cc3344'},
+        {x:382,y:-24,w:22,h:22,vy:0,active:false,fallen:false,color:'#cc3344'},
+      ],
+      wallSpikes:[
+        {x:-56,y:205,w:52,h:46,vx:2.2,active:false,done:false,color:'#cc3344'},
+      ],
+      traps:[
+        { trigger:'playerX', val:108, fired:false, action:'dropSpike', idx:0, msg:"here we go" },
+        { trigger:'playerX', val:242, fired:false, action:'dropSpike', idx:1, msg:null },
+        { trigger:'playerX', val:350, fired:false, action:'dropSpike', idx:2, msg:null },
+        { trigger:'playerX', val:415, fired:false, action:'activateWallSpike', idx:0, msg:"one more" },
+      ],
+    },
+
+    // ── 21: Invisible platforms — flash for 90 frames at start ───────────────
+    {
+      name:"21 - TRUST YOUR GUT",
+      bg:'#0a0a20',
+      spawn:[30,290],
+      door:[548,158],
+      platforms:[
+        {x:0,   y:320, w:120, h:40},
+        {x:158, y:290, w:82,  h:16, invisible:true},
+        {x:298, y:258, w:82,  h:16, invisible:true},
+        {x:432, y:228, w:82,  h:16, invisible:true},
+        {x:500, y:188, w:100, h:20},
+      ],
+      traps:[
+        { trigger:'playerX', val:58, fired:false,
+          action:'flashReveal', duration:90, msg:"remember that" }
+      ],
+    },
+
+    // ── 22: Gravity flips — ceiling is your new floor, door is up there ───────
+    // After flip, player "falls" upward onto ceiling. Door is at 548,28.
+    // The ceiling platform catches you and you walk to door.
+    {
+      name:"22 - SMOOTH SAILING",
+      bg:'#0a1a1a',
+      spawn:[30,290],
+      door:[540,28],
+      platforms:[
+        {x:0,   y:320, w:600, h:40},
+        {x:0,   y:0,   w:600, h:20, color:'#2a3a4a'},
+      ],
+      traps:[
+        { trigger:'playerX', val:200, fired:false,
+          action:'gravityFlip', msg:"which way is down?" }
+      ],
+    },
+
+    // ── 23: Alternating collapse tiles — orange colour marks them ────────────
+    {
+      name:"23 - STURDY TILES",
+      bg:'#181824',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0,   y:320, w:88,  h:40},
+        {x:88,  y:320, w:62,  h:40, special:'collapse', collapseTimer:-1},
+        {x:150, y:320, w:88,  h:40},
+        {x:238, y:320, w:62,  h:40, special:'collapse', collapseTimer:-1},
+        {x:300, y:320, w:88,  h:40},
+        {x:388, y:320, w:62,  h:40, special:'collapse', collapseTimer:-1},
+        {x:450, y:320, w:150, h:40},
+      ],
+      traps:[],
+    },
+
+    // ── 24: Jump pads — skip the orange one, walk around it ──────────────────
+    {
+      name:"24 - BOUNCY!",
+      bg:'#1a201a',
+      spawn:[30,290],
+      door:[548,290],
+      platforms:[
+        {x:0, y:320, w:600, h:40},
+      ],
+      jumpPads:[
+        {x:108, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+        {x:238, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+        {x:358, y:316, w:50, h:10, boost:-15, color:'#ff6600',
+         ceilSpike:{x:340, y:28, w:86, h:20, active:true, color:'#cc3344'}},
+        {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+      ],
+      traps:[],
+    },
+
+    // ── 25: THE REAL END — all tricks, each survivable, in sequence ───────────
+    {
+      name:"25 - THE END (for real)",
+      bg:'#0f0a0f',
+      spawn:[30,290],
+      door:[548,168],
+      platforms:[
+        {x:0,   y:320, w:155, h:40},
+        {x:205, y:298, w:115, h:20},
+        {x:358, y:278, w:100, h:20, special:'collapse', collapseTimer:-1},
+        {x:458, y:208, w:142, h:20},
+        {x:0,   y:0,   w:600, h:20, color:'#2a1a2a'},
+      ],
+      wallSpikes:[
+        {x:600, y:193, w:54, h:52, vx:-1.8, active:false, done:false, color:'#cc3344'},
+      ],
+      dropSpikes:[
+        {x:176, y:-24, w:22, h:22, vy:0, active:false, fallen:false, color:'#cc3344'},
+      ],
+      traps:[
+        { trigger:'playerX', val:148, fired:false, action:'dropSpike', idx:0, msg:"one more thing" },
+        { trigger:'playerX', val:438, fired:false, action:'activateWallSpike', idx:0, msg:"so close!!" },
+      ],
+    },
+
+  ];
+}
+
+// ─── level runtime state ──────────────────────────────────────────────────────
+let lvl = null;
+let levelData = null;
+let flipControls = false;
+let gravFlipped = false;
+let gravFlipUsed = false;
+let flashRevealTimer = 0;
+
+function loadLevel(idx) {
+  const defs = makeLevels();
+  if (idx >= defs.length) { showWin(); return; }
+  levelData = defs[idx];
+  lvl = JSON.parse(JSON.stringify(levelData)); // deep clone
+  flipControls = false;
+  gravFlipped = false;
+  gravFlipUsed = false;
+  flashRevealTimer = 0;
+  frame = 0;
+  spawnPlayer(lvl.spawn[0], lvl.spawn[1]);
+  document.getElementById('levelName').textContent = `LEVEL ${lvl.name}`;
+}
+
+function showWin() {
+  gameActive = false;
+  document.getElementById('winOverlay').style.display = 'flex';
+  document.getElementById('winDeaths').textContent = `Total deaths: ${totalDeaths}`;
+}
+
+// ─── collision helpers ────────────────────────────────────────────────────────
+function overlaps(ax,ay,aw,ah, bx,by,bw,bh) {
+  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
+}
+function rectRect(a,b) {
+  return overlaps(a.x,a.y,a.w,a.h, b.x,b.y,b.w,b.h);
+}
+function playerRect() { return {x:p.x,y:p.y,w:p.w,h:p.h}; }
+
+// ─── death ────────────────────────────────────────────────────────────────────
+function die(msg) {
+  if (p.dead) return;
+  p.dead = true; p.deadTimer = 45;
+  totalDeaths++;
+  document.getElementById('deathNum').textContent = totalDeaths;
+  troll(msg);
+  setTimeout(() => loadLevel(curLevel), 600);
+}
+
+// ─── trap execution ───────────────────────────────────────────────────────────
+function fireTrap(trap) {
+  trap.fired = true;
+  const action = trap.action;
+
+  if (action === 'removeFloorChunk') {
+    lvl.platforms = lvl.platforms.filter(pl =>
+      !(pl.y >= 310 && pl.x >= trap.cx && pl.x <= trap.cx + trap.cw)
+    );
+    // punch hole in full floor
+    const orig = lvl.platforms.find(pl => pl.y === 320 && pl.w === 600);
+    if (orig) {
+      lvl.platforms = lvl.platforms.filter(p => p !== orig);
+      lvl.platforms.push({x:0,     y:320, w:trap.cx,         h:40});
+      lvl.platforms.push({x:trap.cx+trap.cw, y:320, w:600-(trap.cx+trap.cw), h:40});
+    }
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'ceilingDrop') {
+    lvl._ceilingY = 0;
+    lvl._ceilingTargetY = trap.targetY;
+    lvl._ceilingDropping = true;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'activateWallSpike') {
+    lvl.wallSpikes[trap.idx].active = true;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'dropSpike') {
+    if (lvl.dropSpikes && lvl.dropSpikes[trap.idx]) {
+      lvl.dropSpikes[trap.idx].active = true;
+      if (trap.msg) troll(trap.msg);
+    }
+  }
+
+  if (action === 'startSlide') {
+    const pl = lvl.platforms[trap.idx];
+    if (pl) { pl._sliding = true; pl._slideSpeed = trap.speed; }
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'reverseFloor') {
+    flipControls = !flipControls;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'flipControls') {
+    flipControls = !flipControls;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'moveDoor') {
+    lvl.door[0] = trap.newX; lvl.door[1] = trap.newY;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'collapseFloor') {
+    const pl = lvl.platforms[trap.platIdx];
+    if (pl) { pl.special = 'collapse'; pl.collapseTimer = 30; }
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'spikeFromAbove') {
+    lvl._fallingSpike = {x:trap.tx, y:trap.ty, w:trap.tw, h:trap.th, vy:trap.speed, color:'#cc3344'};
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'floorSlide') {
+    lvl.platforms.forEach(pl => { if(pl.y===320) { pl._slideRight = true; pl._slideSpeed = trap.speed; } });
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'revealSpikes') {
+    if (lvl.hiddenSpikes) lvl.hiddenSpikes.forEach(s => s.revealed = true);
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'activateWall') {
+    lvl.movingWalls[trap.idx].active = true;
+    lvl.movingWalls[trap.idx].vx = trap.speed;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'flashReveal') {
+    flashRevealTimer = trap.duration;
+    if (trap.msg) troll(trap.msg);
+  }
+
+  if (action === 'gravityFlip') {
+    gravFlipped = !gravFlipped;
+    if (trap.msg) troll(trap.msg);
+  }
+}
+
+// ─── update ───────────────────────────────────────────────────────────────────
+function update() {
+  if (!gameActive || !p || p.dead) return;
+  frame++;
+
+  const GRAV  = gravFlipped ? -0.5 : 0.5;
+  const JSPD  = gravFlipped ?  10  : -10;
+  const SPEED = 3.4;
+
+  // movement
+  const goLeft  = flipControls ? right() : left();
+  const goRight = flipControls ? left()  : right();
+
+  if (goLeft)  p.vx = -SPEED;
+  else if (goRight) p.vx = SPEED;
+  else p.vx *= 0.78;
+
+  if (jump() && p.grounded) { p.vy = JSPD; p.grounded = false; }
+
+  p.vy += GRAV;
+  if (Math.abs(p.vy) > 16) p.vy = Math.sign(p.vy)*16;
+
+  p.x += p.vx;
+  p.y += p.vy;
+  p.grounded = false;
+
+  // ── platform collisions ──────────────────────────────────────────────────
+  for (let i = 0; i < lvl.platforms.length; i++) {
+    const pl = lvl.platforms[i];
+    if (pl._gone) continue;
+    if (pl.invisible && flashRevealTimer <= 0) continue; // invisible platforms only exist when flash active (and are still solid)
+
+    // slide platform
+    if (pl._sliding) {
+      pl.x += pl._slideSpeed;
+      if (pl.x > lvl._slideMaxX || pl.x > 700) pl._slideSpeed = 0;
+    }
+    if (pl._slideRight) {
+      pl.x += pl._slideSpeed;
+      if (pl.x > 700) pl._gone = true;
+    }
+
+    // deadly floor
+    if (pl.deadly) {
+      if (overlaps(p.x,p.y,p.w,p.h, pl.x,pl.y,pl.w,pl.h)) { die(); return; }
+      continue;
+    }
+
+    if (!overlaps(p.x,p.y,p.w,p.h, pl.x,pl.y,pl.w,pl.h)) continue;
+
+    const overX = Math.min(p.x+p.w,pl.x+pl.w) - Math.max(p.x,pl.x);
+    const overY = Math.min(p.y+p.h,pl.y+pl.h) - Math.max(p.y,pl.y);
+
+    if (overX < overY) {
+      p.x += p.x < pl.x ? -overX : overX; p.vx = 0;
+    } else {
+      if (!gravFlipped) {
+        if (p.vy >= 0 && p.y+p.h <= pl.y+pl.h+4) {
+          p.y = pl.y - p.h; p.vy = 0; p.grounded = true;
+          // collapse platform
+          if (pl.special === 'collapse') {
+            if (pl.collapseTimer < 0) pl.collapseTimer = 38;
+          }
+          // stand-on trap trigger
+          lvl.traps && lvl.traps.forEach(t => {
+            if (!t.fired && t.trigger === 'playerStandOn' && t.platIdx === i) fireTrap(t);
+          });
+        } else if (p.vy < 0) { p.y = pl.y+pl.h; p.vy = 0; }
+      } else {
+        if (p.vy <= 0 && p.y >= pl.y-4) {
+          p.y = pl.y+pl.h; p.vy = 0; p.grounded = true;
+          if (pl.special === 'collapse' && pl.collapseTimer < 0) pl.collapseTimer = 38;
+        } else if (p.vy > 0) { p.y = pl.y-p.h; p.vy = 0; }
+      }
+    }
+  }
+
+  // collapse timers
+  lvl.platforms.forEach(pl => {
+    if (pl.special === 'collapse' && pl.collapseTimer > 0) {
+      pl.collapseTimer--;
+      if (pl.collapseTimer === 0) pl._gone = true;
+    }
+  });
+
+  // ── invisible pit death ──────────────────────────────────────────────────
+  if (lvl.invisPits) {
+    for (const pit of lvl.invisPits) {
+      if (overlaps(p.x,p.y,p.w,p.h, pit.x,pit.y,pit.w,pit.h)) { die("surprise hole"); return; }
+    }
+  }
+
+  // ── teleport pads ────────────────────────────────────────────────────────
+  if (lvl.teleportPads) {
+    for (const tp of lvl.teleportPads) {
+      if (overlaps(p.x,p.y,p.w,p.h, tp.x,tp.y,tp.w,tp.h)) {
+        p.x = tp.destX; p.y = tp.destY; p.vx = 0; p.vy = 0;
+        troll(tp.msg || "teleported lol");
+      }
+    }
+  }
+
+  // ── ceiling drop ─────────────────────────────────────────────────────────
+  if (lvl._ceilingDropping) {
+    lvl._ceilingY = (lvl._ceilingY || 0) + 5;
+    if (lvl._ceilingY >= lvl._ceilingTargetY) { lvl._ceilingY = lvl._ceilingTargetY; lvl._ceilingDropping = false; }
+    const cy = lvl._ceilingY;
+    if (overlaps(p.x,p.y,p.w,p.h, 0,cy,W,20)) { die("ceiling says hi"); return; }
+  }
+
+  // ── drop spikes ──────────────────────────────────────────────────────────
+  if (lvl.dropSpikes) {
+    for (const ds of lvl.dropSpikes) {
+      if (!ds.active || ds.fallen) continue;
+      ds.vy += 0.85; ds.y += ds.vy;
+      if (ds.y > 360) { ds.fallen = true; continue; }
+      if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, ds.x,ds.y,ds.w,ds.h)) { die(); return; }
+      // land on floor
+      if (ds.y + ds.h >= 320) { ds.y = 300; ds.vy = 0; ds.fallen = true; }
+    }
+  }
+
+  // ── wall spikes ──────────────────────────────────────────────────────────
+  if (lvl.wallSpikes) {
+    for (const ws of lvl.wallSpikes) {
+      if (!ws.active || ws.done) continue;
+      ws.x += ws.vx;
+      if (ws.x > W+10 || ws.x+ws.w < -10) { ws.done = true; continue; }
+      if (overlaps(p.x+1,p.y+1,p.w-2,p.h-2, ws.x,ws.y,ws.w,ws.h)) { die(); return; }
+    }
+  }
+
+  // ── moving walls ─────────────────────────────────────────────────────────
+  if (lvl.movingWalls) {
+    for (const mw of lvl.movingWalls) {
+      if (!mw.active) continue;
+      mw.x += mw.vx;
+      if (overlaps(p.x,p.y,p.w,p.h, mw.x,mw.y,mw.w,mw.h)) { die("squished"); return; }
+    }
+  }
+
+  // ── falling spike from above (trap 11 style) ─────────────────────────────
+  if (lvl._fallingSpike) {
+    const fs = lvl._fallingSpike;
+    fs.y += fs.vy;
+    if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, fs.x,fs.y,fs.w,fs.h)) { die(); return; }
+    if (fs.y > 400) lvl._fallingSpike = null;
+  }
+
+  // ── floor spikes (static) ────────────────────────────────────────────────
+  if (lvl.floorSpikes) {
+    for (const fs of lvl.floorSpikes) {
+      if (fs.deadly && overlaps(p.x,p.y+p.h-2,p.w,4, fs.x,fs.y,fs.w,fs.h)) { die(); return; }
+    }
+  }
+
+  // ── hidden spikes revealed ────────────────────────────────────────────────
+  if (lvl.hiddenSpikes) {
+    for (const hs of lvl.hiddenSpikes) {
+      if (hs.revealed && overlaps(p.x+2,p.y+2,p.w-4,p.h-4, hs.x,hs.y,hs.w,hs.h)) { die(); return; }
+    }
+  }
+
+  // ── jump pads ────────────────────────────────────────────────────────────
+  if (lvl.jumpPads) {
+    for (const jp of lvl.jumpPads) {
+      if (overlaps(p.x,p.y+p.h-2,p.w,4, jp.x,jp.y,jp.w,jp.h) && p.vy >= 0) {
+        p.vy = jp.boost;
+        // ceiling spike
+        if (jp.ceilSpike && jp.ceilSpike.active) {
+          // will be drawn and checked
+        }
+      }
+      if (jp.ceilSpike && jp.ceilSpike.active) {
+        if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, jp.ceilSpike.x,jp.ceilSpike.y,jp.ceilSpike.w,jp.ceilSpike.h)) {
+          die("the yellow one was a trap"); return;
+        }
+      }
+    }
+  }
+
+  // ── coins ─────────────────────────────────────────────────────────────────
+  if (lvl.coins) {
+    lvl.coins.forEach((c, i) => {
+      if (!c.alive) return;
+      if (overlaps(p.x,p.y,p.w,p.h, c.x-c.r,c.y-c.r,c.r*2,c.r*2)) {
+        c.alive = false;
+        lvl.traps && lvl.traps.forEach(t => {
+          if (!t.fired && t.trigger === 'coinCollect' && t.coinIdx === i) fireTrap(t);
+        });
+      }
+    });
+  }
+
+  // ── bounds death ─────────────────────────────────────────────────────────
+  if (p.y > H + 50)  { die("into the void"); return; }
+  if (p.y < -80)     { die("too high!"); return; }
+  if (p.x < -40 || p.x > W+40) { die(); return; }
+
+  // ── trigger traps by playerX ─────────────────────────────────────────────
+  if (lvl.traps) {
+    for (const t of lvl.traps) {
+      if (t.fired) continue;
+      if (t.trigger === 'playerX' && p.x+p.w/2 >= t.val) fireTrap(t);
+    }
+  }
+
+  // ── flash reveal timer ───────────────────────────────────────────────────
+  if (flashRevealTimer > 0) flashRevealTimer--;
+
+  // ── door check ───────────────────────────────────────────────────────────
+  const [dx, dy] = lvl.door;
+  if (overlaps(p.x,p.y,p.w,p.h, dx,dy,26,38)) {
+    curLevel++;
+    loadLevel(curLevel);
+  }
+}
+
+// ─── draw ─────────────────────────────────────────────────────────────────────
+const PLAT_COLORS = {
+  default: '#4060a0',
+  collapse: '#a06040',
+  slideRight: '#4080a0',
+  deadly: '#801010',
+  slippery: '#80b0d0',
+  hiddenSpike: '#a06040',
+};
+
+function drawPlatform(pl) {
+  if (pl._gone) return;
+  let col = PLAT_COLORS.default;
+  if (pl.color) col = pl.color;
+  if (pl.special === 'collapse') {
+    col = PLAT_COLORS.collapse;
+    if (pl.collapseTimer > 0) {
+      // shake
+      ctx.save();
+      ctx.translate((Math.random()-.5)*3, 0);
+    }
+  }
+  if (pl.slippery) col = PLAT_COLORS.slippery;
+  if (pl.deadly && !pl.color) col = '#801020';
+  if (pl.invisible) {
+    if (flashRevealTimer > 0) {
+      ctx.globalAlpha = 0.4 + 0.6*(flashRevealTimer/60);
+      col = '#8080ff';
+    } else {
+      ctx.globalAlpha = 0;
+    }
+  }
+  ctx.fillStyle = col;
+  ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, pl.h);
+  // top shine
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, 3);
+  ctx.globalAlpha = 1;
+  if (pl.special === 'collapse' && pl.collapseTimer > 0) ctx.restore();
+}
+
+function drawSpikeTri(x, y, w, h, color, pointUp) {
+  ctx.fillStyle = color;
+  const count = Math.max(1, Math.floor(w/12));
+  const tw = w / count;
+  for (let i = 0; i < count; i++) {
+    ctx.beginPath();
+    if (pointUp) {
+      ctx.moveTo(x+i*tw,   y+h);
+      ctx.lineTo(x+i*tw+tw/2, y);
+      ctx.lineTo(x+i*tw+tw, y+h);
+    } else {
+      ctx.moveTo(x+i*tw,   y);
+      ctx.lineTo(x+i*tw+tw/2, y+h);
+      ctx.lineTo(x+i*tw+tw, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawDoor(x, y) {
+  // frame
+  ctx.fillStyle = '#cc9944';
+  ctx.fillRect(x, y, 26, 38);
+  // inner
+  ctx.fillStyle = '#664400';
+  ctx.fillRect(x+3, y+3, 20, 35);
+  // shine top
+  ctx.fillStyle = '#ffcc66';
+  ctx.fillRect(x, y, 26, 4);
+  // knob
+  ctx.fillStyle = '#ffcc00';
+  ctx.beginPath();
+  ctx.arc(x+19, y+22, 3, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawPlayer() {
+  if (p.dead) {
+    ctx.globalAlpha = Math.max(0, p.deadTimer/45);
+    ctx.fillStyle = '#ff4444';
+    ctx.fillRect(Math.round(p.x-3), Math.round(p.y-3), p.w+6, p.h+6);
+    ctx.globalAlpha = 1;
+    p.deadTimer--;
+    return;
+  }
+  const px = Math.round(p.x), py = Math.round(p.y);
+  // body
+  ctx.fillStyle = '#e8d5b0';
+  ctx.fillRect(px, py, p.w, p.h);
+  // eyes
+  ctx.fillStyle = '#222';
+  ctx.fillRect(px+(p.vx>=0?10:4), py+6, 3, 3);
+  // mouth / expression
+  ctx.fillStyle = '#a06030';
+  ctx.fillRect(px+(p.vx>=0?8:3), py+14, 6, 2);
+  // legs
+  const lp = Math.abs(p.vx)>.5 ? Math.sin(frame*.3)*3 : 0;
+  ctx.fillStyle = '#4466aa';
+  ctx.fillRect(px+2,   py+p.h, 6, 4+lp);
+  ctx.fillRect(px+p.w-8, py+p.h, 6, 4-lp);
+}
+
+function render() {
+  if (!lvl) return;
+  ctx.fillStyle = lvl.bg || '#1a1a2e';
+  ctx.fillRect(0,0,W,H);
+
+  // subtle grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+  ctx.lineWidth = 1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // extra rects (decorative)
+  if (lvl.extraRects) {
+    for (const r of lvl.extraRects) {
+      ctx.fillStyle = r.color || '#333';
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+    }
+  }
+
+  // ceiling drop
+  if (lvl._ceilingY !== undefined && lvl._ceilingY >= 0) {
+    ctx.fillStyle = '#cc3344';
+    ctx.fillRect(0, lvl._ceilingY, W, 20);
+  }
+
+  // platforms
+  lvl.platforms.forEach(drawPlatform);
+
+  // invisible pits — draw as normal floor (same color — deceptive!)
+  if (lvl.invisPits) {
+    for (const pit of lvl.invisPits) {
+      ctx.fillStyle = '#4060a0';
+      ctx.fillRect(pit.x, pit.y, pit.w, pit.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(pit.x, pit.y, pit.w, 3);
+    }
+  }
+
+  // hidden spikes
+  if (lvl.hiddenSpikes) {
+    for (const hs of lvl.hiddenSpikes) {
+      if (!hs.revealed) continue;
+      drawSpikeTri(hs.x, hs.y, hs.w, hs.h, hs.color, true);
+    }
+  }
+
+  // floor spikes
+  if (lvl.floorSpikes) {
+    for (const fs of lvl.floorSpikes) {
+      if (!fs.deadly) continue;
+      ctx.fillStyle = fs.color || '#cc3344';
+      ctx.fillRect(fs.x, fs.y, fs.w, fs.h);
+    }
+  }
+
+  // jump pads
+  if (lvl.jumpPads) {
+    for (const jp of lvl.jumpPads) {
+      ctx.fillStyle = jp.color;
+      ctx.fillRect(jp.x, jp.y, jp.w, jp.h);
+      if (jp.ceilSpike && jp.ceilSpike.active) {
+        drawSpikeTri(jp.ceilSpike.x, jp.ceilSpike.y, jp.ceilSpike.w, jp.ceilSpike.h, jp.ceilSpike.color, false);
+      }
+    }
+  }
+
+  // drop spikes
+  if (lvl.dropSpikes) {
+    for (const ds of lvl.dropSpikes) {
+      if (!ds.active) continue;
+      drawSpikeTri(ds.x, ds.y, ds.w, ds.h, ds.color, true);
+    }
+  }
+
+  // wall spikes
+  if (lvl.wallSpikes) {
+    for (const ws of lvl.wallSpikes) {
+      if (!ws.active || ws.done) continue;
+      ctx.fillStyle = ws.color;
+      ctx.fillRect(Math.round(ws.x), ws.y, ws.w, ws.h);
+    }
+  }
+
+  // moving walls
+  if (lvl.movingWalls) {
+    for (const mw of lvl.movingWalls) {
+      ctx.fillStyle = mw.color || '#cc3344';
+      ctx.fillRect(Math.round(mw.x), mw.y, mw.w, mw.h);
+    }
+  }
+
+  // falling spike from above
+  if (lvl._fallingSpike) {
+    const fs = lvl._fallingSpike;
+    ctx.fillStyle = fs.color;
+    ctx.fillRect(fs.x, Math.round(fs.y), fs.w, fs.h);
+  }
+
+  // teleport pads
+  if (lvl.teleportPads) {
+    for (const tp of lvl.teleportPads) {
+      ctx.fillStyle = '#aa44ff';
+      ctx.fillRect(tp.x, tp.y, tp.w, tp.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(tp.x, tp.y, tp.w, 3);
+    }
+  }
+
+  // coins
+  if (lvl.coins) {
+    ctx.fillStyle = '#ffcc00';
+    for (const c of lvl.coins) {
+      if (!c.alive) continue;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#fff8cc';
+      ctx.beginPath();
+      ctx.arc(c.x-2, c.y-2, c.r*.4, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#ffcc00';
+    }
+  }
+
+  // door
+  const [dx,dy] = lvl.door;
+  drawDoor(dx, dy);
+
+  // gravity flip indicator
+  if (gravFlipped) {
+    ctx.fillStyle = 'rgba(0,200,255,0.06)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = '#00aaff';
+    ctx.font = '10px monospace';
+    ctx.fillText('▲ gravity flipped ▲', 10, H-10);
+  }
+
+  // controls flipped indicator (briefly)
+  if (flipControls && frame < 200) {
+    ctx.fillStyle = 'rgba(255,100,0,0.5)';
+    ctx.font = '9px monospace';
+    ctx.fillText('controls: normal', 10, H-10);
+  }
+
+  drawPlayer();
+}
+
+// ─── loop ─────────────────────────────────────────────────────────────────────
+function loop() {
+  update();
+  render();
+  if (gameActive) requestAnimationFrame(loop);
+}
+
+// ─── start ────────────────────────────────────────────────────────────────────
+document.getElementById('startBtn').addEventListener('click', () => {
+  document.getElementById('startOverlay').style.display = 'none';
+  curLevel = 0; totalDeaths = 0;
+  document.getElementById('deathNum').textContent = '0';
+  loadLevel(0);
+  gameActive = true;
+  loop();
+});
+
+document.getElementById('restartBtn').addEventListener('click', () => {
+  document.getElementById('winOverlay').style.display = 'none';
+  curLevel = 0; totalDeaths = 0;
+  document.getElementById('deathNum').textContent = '0';
+  loadLevel(0);
+  gameActive = true;
+  loop();
+});
+</script>
+</body>
+</html>
