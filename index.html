@@ -117,15 +117,10 @@ function troll(msg) {
 }
 
 // ─── level definitions ────────────────────────────────────────────────────────
-// Each level: platforms, door position, spawn position, and traps list
-// Traps fire based on conditions (player X crossing a threshold, timer, etc.)
-// Visually levels look SIMPLE — wide flat floor, a few platforms, clear path to door
-
 function makeLevels() {
   return [
 
     // ── 1: Floor looks fine — one hole punches open mid-run ──────────────────
-    // Gap is 70px. Player speed ~3.4px/frame, jump clears ~110px. Totally beatable.
     {
       name:"1 - JUST WALK",
       bg:'#1a1a2e',
@@ -140,9 +135,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 2: Ceiling drops — but only crushes if you jump ──────────────────────
-    // Ceiling stops at y=272. Floor at 320. Player h=24. Gap = 24px = just enough to stand, not jump.
-    // If you jump you die. The troll: you naturally try to jump the ceiling, which kills you.
+    // ── 2: Ceiling drops ──────────────────────────────────────────────────────
     {
       name:"2 - LOW CEILING",
       bg:'#1a1a30',
@@ -160,7 +153,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 3: One collapse tile — visually same colour, gives 38 frames to hop off
+    // ── 3: Collapse tile ──────────────────────────────────────────────────────
     {
       name:"3 - NORMAL FLOOR",
       bg:'#1e2030',
@@ -174,8 +167,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 4: Gap to jump — wall spike fires the moment you leave the edge ───────
-    // Spike travels at speed 2.2, height 230–270 — you can jump OVER it or stay low.
+    // ── 4: Gap + wall spike ───────────────────────────────────────────────────
     {
       name:"4 - EASY GAP",
       bg:'#1a2020',
@@ -194,7 +186,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 5: Flat floor with ONE invisible pit — 72px wide, jumpable ───────────
+    // ── 5: Invisible pit ─────────────────────────────────────────────────────
     {
       name:"5 - SOLID FLOOR",
       bg:'#201830',
@@ -209,9 +201,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 6: Teleport pad kills your progress — real path is jump OVER it ───────
-    // Safe stone at 340, teleport pad at 480, door at y=230 above.
-    // You CAN reach the door by jumping from the safe stone directly — skip the trap pad.
+    // ── 6: Teleport pad ───────────────────────────────────────────────────────
     {
       name:"6 - ALMOST THERE",
       bg:'#201a20',
@@ -228,7 +218,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 7: Drop spikes, one per zone — easy to dodge by stopping between ──────
+    // ── 7: Drop spikes ────────────────────────────────────────────────────────
     {
       name:"7 - OPEN ROOM",
       bg:'#1a2018',
@@ -249,9 +239,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 8: Sliding platform — moves right slowly, you must jump off before gap ─
-    // Start platform ends at x=120. Slide plat starts at 175, slides right.
-    // Right landing at x=440. Plenty wide.
+    // ── 8: Sliding platform ───────────────────────────────────────────────────
     {
       name:"8 - MOVING PLATFORM",
       bg:'#201820',
@@ -268,9 +256,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 9: Controls flip — gap to cross after flip, door is right there ───────
-    // Floor has a gap at 400–450. Flip fires at x=300. After flip, press LEFT to go right.
-    // Gap is 50px — jumpable even with flipped controls once you figure it out.
+    // ── 9: Controls flip ──────────────────────────────────────────────────────
     {
       name:"9 - EASY ROOM",
       bg:'#182028',
@@ -286,7 +272,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 10: Door runs away — but only moves ONCE, to x=30, floor is safe ──────
+    // ── 10: Door runs away — hole opens only after door has moved, when you get close ─
     {
       name:"10 - FINISH LINE",
       bg:'#201c18',
@@ -297,12 +283,13 @@ function makeLevels() {
       ],
       traps:[
         { trigger:'playerX', val:400, fired:false,
-          action:'moveDoor', newX:30, newY:290, msg:"door said no" }
+          action:'moveDoor', newX:30, newY:290, msg:"door said no" },
+        { trigger:'playerXBelow_afterDoor', val:250, fired:false,
+          action:'removeFloorChunk', cx:85, cw:120, msg:"nice try though" },
       ],
     },
 
-    // ── 11: 4 platforms — step on the 3rd one and a spike drops from above ────
-    // Spike speed 3 — player has ~25 frames to hop to plat 4 before it arrives.
+    // ── 11: Platform spike from above ────────────────────────────────────────
     {
       name:"11 - CHOOSE WISELY",
       bg:'#1c1c28',
@@ -311,18 +298,16 @@ function makeLevels() {
       platforms:[
         {x:0,   y:240, w:120, h:20},
         {x:160, y:240, w:120, h:20},
-        {x:320, y:240, w:120, h:20},  // trap — spike drops
+        {x:320, y:240, w:120, h:20},
         {x:480, y:240, w:120, h:20},
-        {x:0,   y:320, w:600, h:40},
       ],
       traps:[
         { trigger:'playerStandOn', platIdx:2, fired:false,
-          action:'spikeFromAbove', tx:320, ty:-60, tw:120, th:16, speed:3, msg:"wrong one" }
+          action:'spikeFromAbove', tx:320, ty:-60, tw:120, th:16, speed:7, msg:"wrong one" }
       ],
     },
 
-    // ── 12: Full floor slides right — there's a fixed ledge at 460 to jump to ─
-    // Floor slides at 1.4px/frame. Fixed ledge at x=460,y=280 never moves. Door on it.
+    // ── 12: Floor slides right — PATCHED: speed bumped from 1.4 → 3.2 ────────
     {
       name:"12 - SOLID GROUND",
       bg:'#181c20',
@@ -330,15 +315,15 @@ function makeLevels() {
       door:[530,258],
       platforms:[
         {x:0,   y:320, w:600, h:40},
-        {x:460, y:278, w:140, h:20},  // this one is FIXED — doesn't slide
+        {x:460, y:278, w:140, h:20},
       ],
       traps:[
         { trigger:'playerX', val:190, fired:false,
-          action:'floorSlide', speed:1.4, msg:"the floor is lying" }
+          action:'floorSlide', speed:3.2, msg:"the floor is lying" }
       ],
     },
 
-    // ── 13: Coins reveal two spike patches — gap between them is 80px ─────────
+    // ── 13: Coins reveal spikes ───────────────────────────────────────────────
     {
       name:"13 - FREE COINS!",
       bg:'#20201a',
@@ -362,9 +347,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 14: Jump pads — green = safe, orange = ceiling spike at y=28 ──────────
-    // Boost is -13 so player peaks around y=150. Spike is at y=28,h=22 → top is y=28.
-    // Player only dies if they go very high, which they do on orange (boost -16). Dodge = don't use it.
+    // ── 14: Jump pads ─────────────────────────────────────────────────────────
     {
       name:"14 - HELPFUL JUMP PAD",
       bg:'#1c201c',
@@ -383,11 +366,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 15: REDESIGNED — wall comes from RIGHT, door is on RIGHT side up top ───
-    // Player spawns left. Wall activates when they reach x=300 (halfway).
-    // The door is at x=520, y=200 on a platform at y=220 — to the RIGHT, near the wall.
-    // Strategy: RUSH RIGHT, jump to the ledge, enter door BEFORE the wall reaches you.
-    // Wall speed -2.0 starts at x=600, door ledge at x=480. Player has ~60 frames.
+    // ── 15: Moving wall ───────────────────────────────────────────────────────
     {
       name:"15 - WIDE OPEN",
       bg:'#201820',
@@ -406,7 +385,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 16: Collapse bridges over lava — 38-frame window, gaps are jumpable ───
+    // ── 16: Collapse bridges ──────────────────────────────────────────────────
     {
       name:"16 - FLOATING ISLAND",
       bg:'#181a24',
@@ -422,7 +401,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 17: Two wall spikes fire in sequence — dodge right, then left ─────────
+    // ── 17: Two wall spikes ───────────────────────────────────────────────────
     {
       name:"17 - HALLWAY",
       bg:'#20181a',
@@ -443,7 +422,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 18: Floor collapses near door — there's a ledge above to land on ──────
+    // ── 18: Floor collapses near door ─────────────────────────────────────────
     {
       name:"18 - SO CLOSE",
       bg:'#1c201e',
@@ -460,7 +439,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 19: Controls flip AFTER the first gap — second gap needs flipped logic ─
+    // ── 19: Controls flip after first gap ─────────────────────────────────────
     {
       name:"19 - NORMAL LEVEL",
       bg:'#1e1c20',
@@ -477,7 +456,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 20: Three drop spikes, then a wall spike — spaced so you can weave ────
+    // ── 20: Drop spikes + wall spike ─────────────────────────────────────────
     {
       name:"20 - GRAND FINALE",
       bg:'#200a0a',
@@ -503,7 +482,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 21: Invisible platforms — flash for 90 frames at start ───────────────
+    // ── 21: Invisible platforms ───────────────────────────────────────────────
     {
       name:"21 - TRUST YOUR GUT",
       bg:'#0a0a20',
@@ -522,9 +501,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 22: Gravity flips — ceiling is your new floor, door is up there ───────
-    // After flip, player "falls" upward onto ceiling. Door is at 548,28.
-    // The ceiling platform catches you and you walk to door.
+    // ── 22: Gravity flip ──────────────────────────────────────────────────────
     {
       name:"22 - SMOOTH SAILING",
       bg:'#0a1a1a',
@@ -540,7 +517,7 @@ function makeLevels() {
       ],
     },
 
-    // ── 23: Alternating collapse tiles — orange colour marks them ────────────
+    // ── 23: Alternating collapse tiles ────────────────────────────────────────
     {
       name:"23 - STURDY TILES",
       bg:'#181824',
@@ -558,7 +535,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 24: Jump pads — skip the orange one, walk around it ──────────────────
+    // ── 24: Jump pads with orange trap ────────────────────────────────────────
     {
       name:"24 - BOUNCY!",
       bg:'#1a201a',
@@ -577,7 +554,7 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 25: THE REAL END — all tricks, each survivable, in sequence ───────────
+    // ── 25: Grand finale ──────────────────────────────────────────────────────
     {
       name:"25 - THE END (for real)",
       bg:'#0f0a0f',
@@ -617,7 +594,7 @@ function loadLevel(idx) {
   const defs = makeLevels();
   if (idx >= defs.length) { showWin(); return; }
   levelData = defs[idx];
-  lvl = JSON.parse(JSON.stringify(levelData)); // deep clone
+  lvl = JSON.parse(JSON.stringify(levelData));
   flipControls = false;
   gravFlipped = false;
   gravFlipUsed = false;
@@ -661,7 +638,6 @@ function fireTrap(trap) {
     lvl.platforms = lvl.platforms.filter(pl =>
       !(pl.y >= 310 && pl.x >= trap.cx && pl.x <= trap.cx + trap.cw)
     );
-    // punch hole in full floor
     const orig = lvl.platforms.find(pl => pl.y === 320 && pl.w === 600);
     if (orig) {
       lvl.platforms = lvl.platforms.filter(p => p !== orig);
@@ -779,7 +755,7 @@ function update() {
   for (let i = 0; i < lvl.platforms.length; i++) {
     const pl = lvl.platforms[i];
     if (pl._gone) continue;
-    if (pl.invisible && flashRevealTimer <= 0) continue; // invisible platforms only exist when flash active (and are still solid)
+    if (pl.invisible && flashRevealTimer <= 0) continue;
 
     // slide platform
     if (pl._sliding) {
@@ -808,11 +784,9 @@ function update() {
       if (!gravFlipped) {
         if (p.vy >= 0 && p.y+p.h <= pl.y+pl.h+4) {
           p.y = pl.y - p.h; p.vy = 0; p.grounded = true;
-          // collapse platform
           if (pl.special === 'collapse') {
             if (pl.collapseTimer < 0) pl.collapseTimer = 38;
           }
-          // stand-on trap trigger
           lvl.traps && lvl.traps.forEach(t => {
             if (!t.fired && t.trigger === 'playerStandOn' && t.platIdx === i) fireTrap(t);
           });
@@ -866,7 +840,6 @@ function update() {
       ds.vy += 0.85; ds.y += ds.vy;
       if (ds.y > 360) { ds.fallen = true; continue; }
       if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, ds.x,ds.y,ds.w,ds.h)) { die(); return; }
-      // land on floor
       if (ds.y + ds.h >= 320) { ds.y = 300; ds.vy = 0; ds.fallen = true; }
     }
   }
@@ -890,7 +863,7 @@ function update() {
     }
   }
 
-  // ── falling spike from above (trap 11 style) ─────────────────────────────
+  // ── falling spike from above ─────────────────────────────────────────────
   if (lvl._fallingSpike) {
     const fs = lvl._fallingSpike;
     fs.y += fs.vy;
@@ -917,10 +890,6 @@ function update() {
     for (const jp of lvl.jumpPads) {
       if (overlaps(p.x,p.y+p.h-2,p.w,4, jp.x,jp.y,jp.w,jp.h) && p.vy >= 0) {
         p.vy = jp.boost;
-        // ceiling spike
-        if (jp.ceilSpike && jp.ceilSpike.active) {
-          // will be drawn and checked
-        }
       }
       if (jp.ceilSpike && jp.ceilSpike.active) {
         if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, jp.ceilSpike.x,jp.ceilSpike.y,jp.ceilSpike.w,jp.ceilSpike.h)) {
@@ -948,11 +917,13 @@ function update() {
   if (p.y < -80)     { die("too high!"); return; }
   if (p.x < -40 || p.x > W+40) { die(); return; }
 
-  // ── trigger traps by playerX ─────────────────────────────────────────────
+  // ── trigger traps by playerX (right direction) ───────────────────────────
   if (lvl.traps) {
     for (const t of lvl.traps) {
       if (t.fired) continue;
       if (t.trigger === 'playerX' && p.x+p.w/2 >= t.val) fireTrap(t);
+      // fires when player walks left close to the moved door — only after door has moved
+      if (t.trigger === 'playerXBelow_afterDoor' && lvl.door[0] < 100 && p.x+p.w/2 <= t.val) fireTrap(t);
     }
   }
 
@@ -974,7 +945,6 @@ const PLAT_COLORS = {
   slideRight: '#4080a0',
   deadly: '#801010',
   slippery: '#80b0d0',
-  hiddenSpike: '#a06040',
 };
 
 function drawPlatform(pl) {
@@ -984,7 +954,6 @@ function drawPlatform(pl) {
   if (pl.special === 'collapse') {
     col = PLAT_COLORS.collapse;
     if (pl.collapseTimer > 0) {
-      // shake
       ctx.save();
       ctx.translate((Math.random()-.5)*3, 0);
     }
@@ -1001,7 +970,6 @@ function drawPlatform(pl) {
   }
   ctx.fillStyle = col;
   ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, pl.h);
-  // top shine
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
   ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, 3);
   ctx.globalAlpha = 1;
@@ -1029,16 +997,12 @@ function drawSpikeTri(x, y, w, h, color, pointUp) {
 }
 
 function drawDoor(x, y) {
-  // frame
   ctx.fillStyle = '#cc9944';
   ctx.fillRect(x, y, 26, 38);
-  // inner
   ctx.fillStyle = '#664400';
   ctx.fillRect(x+3, y+3, 20, 35);
-  // shine top
   ctx.fillStyle = '#ffcc66';
   ctx.fillRect(x, y, 26, 4);
-  // knob
   ctx.fillStyle = '#ffcc00';
   ctx.beginPath();
   ctx.arc(x+19, y+22, 3, 0, Math.PI*2);
@@ -1055,16 +1019,12 @@ function drawPlayer() {
     return;
   }
   const px = Math.round(p.x), py = Math.round(p.y);
-  // body
   ctx.fillStyle = '#e8d5b0';
   ctx.fillRect(px, py, p.w, p.h);
-  // eyes
   ctx.fillStyle = '#222';
   ctx.fillRect(px+(p.vx>=0?10:4), py+6, 3, 3);
-  // mouth / expression
   ctx.fillStyle = '#a06030';
   ctx.fillRect(px+(p.vx>=0?8:3), py+14, 6, 2);
-  // legs
   const lp = Math.abs(p.vx)>.5 ? Math.sin(frame*.3)*3 : 0;
   ctx.fillStyle = '#4466aa';
   ctx.fillRect(px+2,   py+p.h, 6, 4+lp);
@@ -1076,13 +1036,11 @@ function render() {
   ctx.fillStyle = lvl.bg || '#1a1a2e';
   ctx.fillRect(0,0,W,H);
 
-  // subtle grid
   ctx.strokeStyle = 'rgba(255,255,255,0.025)';
   ctx.lineWidth = 1;
   for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
-  // extra rects (decorative)
   if (lvl.extraRects) {
     for (const r of lvl.extraRects) {
       ctx.fillStyle = r.color || '#333';
@@ -1090,16 +1048,13 @@ function render() {
     }
   }
 
-  // ceiling drop
   if (lvl._ceilingY !== undefined && lvl._ceilingY >= 0) {
     ctx.fillStyle = '#cc3344';
     ctx.fillRect(0, lvl._ceilingY, W, 20);
   }
 
-  // platforms
   lvl.platforms.forEach(drawPlatform);
 
-  // invisible pits — draw as normal floor (same color — deceptive!)
   if (lvl.invisPits) {
     for (const pit of lvl.invisPits) {
       ctx.fillStyle = '#4060a0';
@@ -1109,7 +1064,6 @@ function render() {
     }
   }
 
-  // hidden spikes
   if (lvl.hiddenSpikes) {
     for (const hs of lvl.hiddenSpikes) {
       if (!hs.revealed) continue;
@@ -1117,7 +1071,6 @@ function render() {
     }
   }
 
-  // floor spikes
   if (lvl.floorSpikes) {
     for (const fs of lvl.floorSpikes) {
       if (!fs.deadly) continue;
@@ -1126,7 +1079,6 @@ function render() {
     }
   }
 
-  // jump pads
   if (lvl.jumpPads) {
     for (const jp of lvl.jumpPads) {
       ctx.fillStyle = jp.color;
@@ -1137,7 +1089,6 @@ function render() {
     }
   }
 
-  // drop spikes
   if (lvl.dropSpikes) {
     for (const ds of lvl.dropSpikes) {
       if (!ds.active) continue;
@@ -1145,7 +1096,6 @@ function render() {
     }
   }
 
-  // wall spikes
   if (lvl.wallSpikes) {
     for (const ws of lvl.wallSpikes) {
       if (!ws.active || ws.done) continue;
@@ -1154,7 +1104,6 @@ function render() {
     }
   }
 
-  // moving walls
   if (lvl.movingWalls) {
     for (const mw of lvl.movingWalls) {
       ctx.fillStyle = mw.color || '#cc3344';
@@ -1162,14 +1111,12 @@ function render() {
     }
   }
 
-  // falling spike from above
   if (lvl._fallingSpike) {
     const fs = lvl._fallingSpike;
     ctx.fillStyle = fs.color;
     ctx.fillRect(fs.x, Math.round(fs.y), fs.w, fs.h);
   }
 
-  // teleport pads
   if (lvl.teleportPads) {
     for (const tp of lvl.teleportPads) {
       ctx.fillStyle = '#aa44ff';
@@ -1179,7 +1126,6 @@ function render() {
     }
   }
 
-  // coins
   if (lvl.coins) {
     ctx.fillStyle = '#ffcc00';
     for (const c of lvl.coins) {
@@ -1195,11 +1141,9 @@ function render() {
     }
   }
 
-  // door
   const [dx,dy] = lvl.door;
   drawDoor(dx, dy);
 
-  // gravity flip indicator
   if (gravFlipped) {
     ctx.fillStyle = 'rgba(0,200,255,0.06)';
     ctx.fillRect(0,0,W,H);
@@ -1208,7 +1152,6 @@ function render() {
     ctx.fillText('▲ gravity flipped ▲', 10, H-10);
   }
 
-  // controls flipped indicator (briefly)
   if (flipControls && frame < 200) {
     ctx.fillStyle = 'rgba(255,100,0,0.5)';
     ctx.font = '9px monospace';
