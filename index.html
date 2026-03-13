@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Floor Lied — A Troll Platformer</title>
+<title>A "Normal" Platformer</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -55,71 +55,60 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
 
 /* ── START SCREEN ── */
 #startOverlay {
-  background:#c45a00;
-  overflow:hidden;
-}
-#startBg {
-  position:absolute; inset:0;
-  background: linear-gradient(to bottom, #5a0a00 0%, #8b1a00 25%, #c45a00 55%, #e8a020 100%);
-}
-#startFire {
-  position:absolute; top:0; left:0; right:0;
-  height:220px;
+  background: linear-gradient(to bottom, #8b1a00 0%, #c45a00 50%, #e8900a 100%);
   overflow:hidden;
 }
 #startContent {
   position:relative; z-index:2;
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
-  width:100%;
-  margin-top:80px;
+  width:100%; height:100%;
+  padding-bottom:80px;
 }
 #startTitle {
   font-family:'Press Start 2P', monospace;
   font-size:52px;
-  color:#e8a020;
-  text-shadow: 4px 4px 0 #5a0a00, 8px 8px 0 #3a0500;
+  color:#f0c060;
+  text-shadow: 5px 5px 0 #5a0a00, 9px 9px 0 #3a0500;
   letter-spacing:4px;
-  margin-bottom:10px;
+  margin-bottom:12px;
+  text-align:center;
   animation: titleBob 2s ease-in-out infinite;
 }
 @keyframes titleBob {
   0%,100% { transform:translateY(0); }
-  50% { transform:translateY(-6px); }
+  50% { transform:translateY(-8px); }
 }
 #startTagline {
   font-family:'Press Start 2P', monospace;
   font-size:9px;
-  color:#f0c060;
+  color:#c07830;
   letter-spacing:2px;
-  margin-bottom:40px;
-  opacity:0.85;
+  margin-bottom:48px;
+  text-align:center;
 }
 #startBtn {
-  font-size:11px;
-  padding:14px 40px;
-  background:#e8a020;
+  font-size:12px;
+  padding:16px 48px;
+  background:#f0c060;
   color:#3a0500;
-  border:3px solid #f0c060;
-  box-shadow: 4px 4px 0 #5a0a00;
-  animation: btnPulse 1.4s ease-in-out infinite;
+  border:4px solid #5a0a00;
+  box-shadow: 5px 5px 0 #3a0500;
+  cursor:pointer;
+  font-family:'Press Start 2P', monospace;
+  transition:transform .08s, box-shadow .08s;
 }
-#startBtn:hover { background:#f0c060; transform:translate(-2px,-2px); box-shadow:6px 6px 0 #5a0a00; }
-@keyframes btnPulse {
-  0%,100% { box-shadow:4px 4px 0 #5a0a00; }
-  50% { box-shadow:4px 4px 16px #ff6600aa, 4px 4px 0 #5a0a00; }
-}
+#startBtn:hover { transform:translate(-2px,-2px); box-shadow:7px 7px 0 #3a0500; background:#fff8c0; }
+#startBtn:active { transform:translate(2px,2px); box-shadow:2px 2px 0 #3a0500; }
 #startHint {
   font-family:'Press Start 2P', monospace;
   font-size:7px;
-  color:#c07820;
-  margin-top:16px;
-  letter-spacing:1px;
+  color:#a06020;
+  margin-top:18px;
 }
-/* ground spikes at bottom of start screen */
+/* spike row at bottom */
 #startSpikes {
-  position:absolute; bottom:0; left:0; right:0;
-  height:60px;
+  position:absolute; bottom:0; left:0; right:0; height:70px;
 }
 
 /* win screen */
@@ -131,32 +120,115 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
   text-shadow: 3px 3px 0 #005533;
   margin-bottom:12px;
 }
+
+/* ── LEVEL SELECT ── */
+#levelSelectOverlay {
+  background: linear-gradient(to bottom, #8b1a00 0%, #c45a00 50%, #e8900a 100%);
+  overflow:hidden;
+  align-items:flex-start;
+  justify-content:flex-start;
+}
+#lsSpikes {
+  position:absolute; bottom:0; left:0; right:0; height:70px; z-index:3;
+}
+#lsHeader {
+  position:relative; z-index:2;
+  width:100%; padding:28px 0 16px;
+  display:flex; align-items:center; justify-content:center; gap:24px;
+}
+#lsTitle {
+  font-family:'Press Start 2P', monospace;
+  font-size:20px;
+  color:#f0c060;
+  text-shadow: 3px 3px 0 #5a0a00;
+  letter-spacing:3px;
+}
+#lsBackBtn {
+  font-size:8px; padding:8px 16px;
+  background:#f0c060; color:#3a0500;
+  border:3px solid #5a0a00;
+  box-shadow:3px 3px 0 #3a0500;
+  font-family:'Press Start 2P', monospace;
+  cursor:pointer;
+}
+#lsBackBtn:hover { background:#fff8c0; }
+/* scrollable path area */
+#lsScroll {
+  position:relative; z-index:2;
+  width:100%; flex:1;
+  overflow-y:auto; overflow-x:hidden;
+  padding-bottom:90px;
+}
+#lsScroll::-webkit-scrollbar { width:6px; }
+#lsScroll::-webkit-scrollbar-track { background:rgba(0,0,0,0.2); }
+#lsScroll::-webkit-scrollbar-thumb { background:#5a0a00; border-radius:3px; }
+/* the SVG path canvas */
+#lsPathCanvas {
+  display:block;
+  position:absolute; top:0; left:0;
+  pointer-events:none;
+}
+#lsPath {
+  position:relative;
+  width:100%;
+}
+/* individual door nodes on the path */
+.ls-node {
+  position:absolute;
+  display:flex; flex-direction:column;
+  align-items:center;
+  cursor:pointer;
+  transition:transform .1s;
+}
+.ls-node:hover:not(.locked) { transform:translateY(-4px) scale(1.08); }
+.ls-node.locked { cursor:default; opacity:0.45; }
+.ls-door-svg { width:48px; height:62px; }
+.ls-node-num {
+  font-family:'Press Start 2P', monospace;
+  font-size:7px;
+  color:#f0c060;
+  margin-top:3px;
+  text-shadow:1px 1px 0 #3a0500;
+}
+.ls-node.beaten .ls-node-num { color:#88ff66; }
+.ls-node.locked .ls-node-num { color:#8a6030; }
 </style>
 </head>
 <body>
 
 <div class="overlay" id="startOverlay">
-  <div id="startBg"></div>
-  <!-- animated fire canvas -->
-  <canvas id="startFire" id="fireCvs"></canvas>
-  <!-- ground spikes SVG -->
-  <svg id="startSpikes" viewBox="0 0 600 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="0,60 0,20 20,60 40,5 60,60 80,15 100,60 120,8 140,60 160,18 180,60 200,10 220,60 240,14 260,60 280,6 300,60 320,16 340,60 360,9 380,60 400,12 420,60 440,7 460,60 480,17 500,60 520,11 540,60 560,13 580,60 600,8 600,60" fill="#5a0a00"/>
-    <polygon points="0,60 10,30 20,60 40,15 60,60 80,22 100,60 120,18 140,60 160,25 180,60 200,20 220,60 240,22 260,60 280,16 300,60 320,24 340,60 360,19 380,60 400,21 420,60 440,17 460,60 480,26 500,60 520,20 540,60 560,22 580,60 600,18 600,60" fill="#8b1a00" opacity="0.7"/>
+  <!-- spike row at bottom -->
+  <svg id="startSpikes" viewBox="0 0 1200 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="0,70 0,30 30,70 60,0 90,70 120,10 150,70 180,5 210,70 240,15 270,70 300,2 330,70 360,12 390,70 420,8 450,70 480,18 510,70 540,4 570,70 600,14 630,70 660,6 690,70 720,16 750,70 780,3 810,70 840,11 870,70 900,7 930,70 960,17 990,70 1020,5 1050,70 1080,13 1110,70 1140,9 1170,70 1200,4 1200,70" fill="#5a0a00"/>
   </svg>
   <div id="startContent">
     <div id="startTitle">FLOOR LIED</div>
-    <div id="startTagline">A TROLL PLATFORMER</div>
+    <div id="startTagline">a &ldquo;normal&rdquo; platformer</div>
     <button class="btn" id="startBtn">▶ PLAY</button>
-    <div id="startHint">← → MOVE &nbsp;|&nbsp; ↑ SPACE JUMP</div>
+    <div id="startHint">← → MOVE &nbsp;&nbsp; ↑ / SPACE JUMP</div>
   </div>
 </div>
 
-<div class="overlay" id="winOverlay">
+<div class="overlay" id="winOverlay" style="display:none;">
   <h1>YOU WIN!</h1>
-  <div class="sub">You actually made it.<br>Honestly didn't expect that.</div>
-  <div id="winDeaths"></div>
-  <button class="btn" id="restartBtn">PLAY AGAIN</button>
+  <div class="sub" style="color:#aaa;font-family:'Press Start 2P',monospace;font-size:9px;line-height:2;">You actually made it.<br>Honestly didn't expect that.</div>
+  <div id="winDeaths" style="color:#888;font-size:11px;margin-top:10px;font-family:'Press Start 2P',monospace;"></div>
+  <button class="btn" id="restartBtn" style="margin-top:24px;">LEVEL SELECT</button>
+</div>
+
+<div class="overlay" id="levelSelectOverlay" style="display:none;">
+  <svg id="lsSpikes" viewBox="0 0 1200 70" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="0,70 0,30 30,70 60,0 90,70 120,10 150,70 180,5 210,70 240,15 270,70 300,2 330,70 360,12 390,70 420,8 450,70 480,18 510,70 540,4 570,70 600,14 630,70 660,6 690,70 720,16 750,70 780,3 810,70 840,11 870,70 900,7 930,70 960,17 990,70 1020,5 1050,70 1080,13 1110,70 1140,9 1170,70 1200,4 1200,70" fill="#5a0a00"/>
+  </svg>
+  <div id="lsHeader">
+    <button id="lsBackBtn">← BACK</button>
+    <div id="lsTitle">SELECT LEVEL</div>
+  </div>
+  <div id="lsScroll">
+    <div id="lsPath">
+      <canvas id="lsPathCanvas"></canvas>
+    </div>
+  </div>
 </div>
 
 <div id="hud">
@@ -168,59 +240,6 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
 <div id="controls">ARROW KEYS / WASD — MOVE &amp; JUMP &nbsp;|&nbsp; SPACE — JUMP</div>
 
 <script>
-// ── Fire animation on start screen ────────────────────────────────────────────
-(function() {
-  const fc = document.getElementById('startFire');
-  if (!fc) return;
-  const fw = window.innerWidth, fh = 220;
-  fc.width = fw; fc.height = fh;
-  const fctx = fc.getContext('2d');
-  // flame particles
-  const flames = Array.from({length:80}, () => ({
-    x: Math.random()*fw,
-    y: fh - Math.random()*60,
-    vy: -(1 + Math.random()*2.5),
-    size: 8 + Math.random()*28,
-    life: Math.random(),
-    speed: 0.012 + Math.random()*0.018,
-  }));
-  function drawFire() {
-    fctx.clearRect(0,0,fw,fh);
-    for (const f of flames) {
-      f.life += f.speed;
-      if (f.life > 1) {
-        f.life = 0;
-        f.x = Math.random()*fw;
-        f.y = fh - Math.random()*20;
-        f.size = 8 + Math.random()*28;
-      }
-      f.y += f.vy;
-      const alpha = 1 - f.life;
-      const r = Math.floor(220 + 35*alpha);
-      const g = Math.floor(60 + 80*(1-f.life));
-      const b = 0;
-      const grad = fctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size*(1-f.life*0.5));
-      grad.addColorStop(0, `rgba(${r},${g},${b},${alpha*0.9})`);
-      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-      fctx.beginPath();
-      fctx.arc(f.x, f.y, f.size*(1-f.life*0.5), 0, Math.PI*2);
-      fctx.fillStyle = grad;
-      fctx.fill();
-    }
-    // dark top gradient overlay
-    const topGrad = fctx.createLinearGradient(0,0,0,fh);
-    topGrad.addColorStop(0,'rgba(50,0,0,0.85)');
-    topGrad.addColorStop(0.5,'rgba(80,10,0,0.3)');
-    topGrad.addColorStop(1,'rgba(0,0,0,0)');
-    fctx.fillStyle = topGrad;
-    fctx.fillRect(0,0,fw,fh);
-    if (document.getElementById('startOverlay').style.display !== 'none') {
-      requestAnimationFrame(drawFire);
-    }
-  }
-  drawFire();
-})();
-
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const W = 600, H = 360;
@@ -1152,6 +1171,7 @@ function update() {
   // ── door check ───────────────────────────────────────────────────────────
   const [dx, dy] = lvl.door;
   if (overlaps(p.x,p.y,p.w,p.h, dx,dy,26,38)) {
+    markLevelBeaten(curLevel);
     curLevel++;
     loadLevel(curLevel);
   }
@@ -1396,23 +1416,156 @@ function loop() {
   if (gameActive) requestAnimationFrame(loop);
 }
 
+// ─── save / progress ─────────────────────────────────────────────────────────
+const SAVE_KEY = 'normalPlatformerProgress';
+let maxUnlocked = 0; // highest level index unlocked (0 = level 1 available)
+
+function saveProgress() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({maxUnlocked})); } catch(e){}
+}
+function loadProgress() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
+    maxUnlocked = d.maxUnlocked || 0;
+  } catch(e){ maxUnlocked = 0; }
+}
+function markLevelBeaten(idx) {
+  if (idx >= maxUnlocked) { maxUnlocked = idx + 1; saveProgress(); }
+}
+loadProgress();
+
+// ─── level select — winding path style ───────────────────────────────────────
+function doorSVG(beaten, locked) {
+  const frameCol = locked ? '#4a3020' : beaten ? '#60aa20' : '#c8901a';
+  const innerCol = locked ? '#1a0e04' : beaten ? '#1a3a08' : '#3a1a08';
+  const knobCol  = locked ? '#4a3020' : '#f0c060';
+  return `<svg class="ls-door-svg" viewBox="0 0 48 62" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="10" width="44" height="50" rx="18" ry="18" fill="${frameCol}"/>
+    <rect x="7" y="15" width="34" height="45" rx="13" ry="13" fill="${innerCol}"/>
+    ${beaten ? '<text x="24" y="40" text-anchor="middle" font-size="18" fill="#88ff66">✓</text>' : ''}
+    <circle cx="36" cy="36" r="3.5" fill="${knobCol}"/>
+  </svg>`;
+}
+
+function buildLevelSelect() {
+  const defs = makeLevels();
+  const path = document.getElementById('lsPath');
+  const cvs  = document.getElementById('lsPathCanvas');
+  path.innerHTML = '';
+  path.appendChild(cvs); // keep canvas
+
+  const vw = window.innerWidth;
+  const COLS = 5;
+  const ROW_H = 130;
+  const NODE_W = 70;
+  const rows = Math.ceil(defs.length / COLS);
+  const totalH = rows * ROW_H + 60;
+
+  path.style.height = totalH + 'px';
+  cvs.width = vw;
+  cvs.height = totalH;
+
+  // compute node positions in snake pattern (like Level Devil)
+  const positions = [];
+  const padX = (vw - COLS * NODE_W) / (COLS + 1);
+  for (let i = 0; i < defs.length; i++) {
+    const row = Math.floor(i / COLS);
+    const col = i % COLS;
+    // snake: even rows go left→right, odd rows go right→left
+    const dir = row % 2 === 0 ? col : (COLS - 1 - col);
+    const x = padX + dir * (NODE_W + padX) + NODE_W / 2;
+    const y = 40 + row * ROW_H;
+    positions.push({x, y});
+  }
+
+  // draw connecting path on canvas
+  const ctx2 = cvs.getContext('2d');
+  ctx2.clearRect(0, 0, vw, totalH);
+  ctx2.strokeStyle = '#5a2a00';
+  ctx2.lineWidth = 8;
+  ctx2.lineCap = 'round';
+  ctx2.lineJoin = 'round';
+  ctx2.setLineDash([14, 10]);
+  ctx2.beginPath();
+  positions.forEach((pt, i) => {
+    if (i === 0) ctx2.moveTo(pt.x, pt.y + 30);
+    else ctx2.lineTo(pt.x, pt.y + 30);
+  });
+  ctx2.stroke();
+  // lighter line on top
+  ctx2.strokeStyle = '#c8901a';
+  ctx2.lineWidth = 4;
+  ctx2.setLineDash([10, 14]);
+  ctx2.stroke();
+  ctx2.setLineDash([]);
+
+  // create door nodes
+  positions.forEach((pt, i) => {
+    const unlocked = i <= maxUnlocked;
+    const beaten = i < maxUnlocked;
+    const locked = !unlocked;
+    const node = document.createElement('div');
+    node.className = 'ls-node' + (locked ? ' locked' : '') + (beaten ? ' beaten' : '');
+    node.style.left = (pt.x - NODE_W/2) + 'px';
+    node.style.top  = (pt.y - 10) + 'px';
+    node.style.width = NODE_W + 'px';
+    node.innerHTML = doorSVG(beaten, locked) +
+      `<div class="ls-node-num">${beaten ? '✓ ' : ''}${i+1}</div>`;
+    if (unlocked) {
+      node.addEventListener('click', () => {
+        hideLevelSelect();
+        startFromLevel(i);
+      });
+    }
+    path.appendChild(node);
+  });
+
+  // scroll to show current level
+  const cur = Math.min(maxUnlocked, defs.length - 1);
+  const curY = positions[cur].y;
+  setTimeout(() => {
+    document.getElementById('lsScroll').scrollTop = Math.max(0, curY - 200);
+  }, 50);
+}
+
+function showLevelSelect() {
+  document.getElementById('levelSelectOverlay').style.display = 'flex';
+  buildLevelSelect();
+}
+
+function hideLevelSelect() {
+  document.getElementById('levelSelectOverlay').style.display = 'none';
+}
+
+function startFromLevel(idx) {
+  curLevel = idx; totalDeaths = 0;
+  document.getElementById('deathNum').textContent = '0';
+  loadLevel(idx);
+  gameActive = true;
+  loop();
+}
+
+// patch showWin to save progress
+const _origShowWin = showWin;
+window.showWin = function() {
+  markLevelBeaten(curLevel - 1);
+  _origShowWin();
+};
+
 // ─── start ────────────────────────────────────────────────────────────────────
 document.getElementById('startBtn').addEventListener('click', () => {
   document.getElementById('startOverlay').style.display = 'none';
-  curLevel = 0; totalDeaths = 0;
-  document.getElementById('deathNum').textContent = '0';
-  loadLevel(0);
-  gameActive = true;
-  loop();
+  showLevelSelect();
+});
+
+document.getElementById('lsBackBtn').addEventListener('click', () => {
+  hideLevelSelect();
+  document.getElementById('startOverlay').style.display = 'flex';
 });
 
 document.getElementById('restartBtn').addEventListener('click', () => {
   document.getElementById('winOverlay').style.display = 'none';
-  curLevel = 0; totalDeaths = 0;
-  document.getElementById('deathNum').textContent = '0';
-  loadLevel(0);
-  gameActive = true;
-  loop();
+  showLevelSelect();
 });
 </script>
 </body>
