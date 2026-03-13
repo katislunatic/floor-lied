@@ -7,7 +7,8 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-* { margin:0; padding:0; box-sizing:border-box; }
+* { margin:0; padding:0; box-sizing:border-box; cursor:none !important; }
+*:hover { cursor:none !important; }
 body {
   background:#7a5010;
   display:flex; flex-direction:column;
@@ -1772,55 +1773,57 @@ window.showWin = function() {
   document.addEventListener('keyup',   e => { held[e.code] = false; });
 
   function menuActive() {
-    return document.getElementById('startOverlay').style.display !== 'none' ||
-      document.getElementById('levelSelectOverlay').style.display !== 'none' ||
-      document.getElementById('pauseOverlay').style.display === 'flex' ||
-      document.getElementById('winOverlay').style.display !== 'none';
+    const start  = document.getElementById('startOverlay');
+    const ls     = document.getElementById('levelSelectOverlay');
+    const pause  = document.getElementById('pauseOverlay');
+    const win    = document.getElementById('winOverlay');
+    return (start  && start.style.display  !== 'none') ||
+           (ls     && ls.style.display     !== 'none') ||
+           (pause  && pause.style.display  === 'flex') ||
+           (win    && win.style.display    !== 'none' && win.style.display !== '');
   }
 
   function tick() {
-    if (menuActive()) {
-      cur.style.display = 'block';
-      // accelerate with WASD or arrows
-      if (held['ArrowLeft']  || held['KeyA']) vx -= ACCEL;
-      if (held['ArrowRight'] || held['KeyD']) vx += ACCEL;
-      if (held['ArrowUp']    || held['KeyW']) vy -= ACCEL;
-      if (held['ArrowDown']  || held['KeyS']) vy += ACCEL;
-      vx *= FRICTION; vy *= FRICTION;
-      vx = Math.max(-MAX, Math.min(MAX, vx));
-      vy = Math.max(-MAX, Math.min(MAX, vy));
-      cx += vx; cy += vy;
-      cx = Math.max(0, Math.min(window.innerWidth  - 2, cx));
-      cy = Math.max(0, Math.min(window.innerHeight - 2, cy));
-      cur.style.left = cx + 'px';
-      cur.style.top  = cy + 'px';
-    } else {
-      cur.style.display = 'none';
-      vx = 0; vy = 0;
-    }
+    // always show custom cursor, always move with keys
+    if (held['ArrowLeft']  || held['KeyA']) vx -= ACCEL;
+    if (held['ArrowRight'] || held['KeyD']) vx += ACCEL;
+    if (held['ArrowUp']    || held['KeyW']) vy -= ACCEL;
+    if (held['ArrowDown']  || held['KeyS']) vy += ACCEL;
+    vx *= FRICTION; vy *= FRICTION;
+    vx = Math.max(-MAX, Math.min(MAX, vx));
+    vy = Math.max(-MAX, Math.min(MAX, vy));
+    cx += vx; cy += vy;
+    cx = Math.max(0, Math.min(window.innerWidth  - 2, cx));
+    cy = Math.max(0, Math.min(window.innerHeight - 2, cy));
+    cur.style.left = cx + 'px';
+    cur.style.top  = cy + 'px';
+    // show cursor on menus/pause, hide during active gameplay
+    cur.style.display = (!gameActive || menuActive()) ? 'block' : 'none';
     requestAnimationFrame(tick);
   }
   tick();
 
-  // Space = click element under cursor
+  // Space = click element under cursor (works on menus AND pause)
   document.addEventListener('keydown', e => {
-    if (e.code === 'Space' && menuActive()) {
+    if (e.code === 'Space' && (!gameActive || menuActive())) {
       e.preventDefault();
-      // find topmost clickable element at cursor position
-      cur.style.display = 'none'; // hide cursor so it doesn't block elementFromPoint
-      const el = document.elementFromPoint(cx + 2, cy + 2);
+      cur.style.display = 'none';
+      // walk up the DOM to find a clickable ancestor
+      let el = document.elementFromPoint(cx + 4, cy + 10);
       cur.style.display = 'block';
-      if (el) el.click();
+      while (el && el !== document.body) {
+        if (el.tagName === 'BUTTON' || el.classList.contains('ls-node') ||
+            el.classList.contains('pause-btn') || el.classList.contains('btn')) {
+          el.click();
+          break;
+        }
+        el = el.parentElement;
+      }
     }
   });
 
-  // Also support mouse click — update cursor pos on mouse move too
-  document.addEventListener('mousemove', e => {
-    if (menuActive()) { cx = e.clientX; cy = e.clientY; }
-  });
-  document.addEventListener('click', e => {
-    if (menuActive()) { cx = e.clientX; cy = e.clientY; }
-  });
+  // Mouse moves cursor too
+  document.addEventListener('mousemove', e => { cx = e.clientX; cy = e.clientY; vx = 0; vy = 0; });
 })();
 
 // ─── start ────────────────────────────────────────────────────────────────────
