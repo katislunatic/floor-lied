@@ -929,7 +929,7 @@ function fireTrap(trap) {
   }
 
   if (action === 'spikeFromAbove') {
-    lvl._fallingSpike = {x:trap.tx, y:trap.ty, w:trap.tw, h:trap.th, vy:trap.speed, color:'#7a5010'};
+    lvl._fallingSpike = {x:trap.tx, y:trap.ty, w:trap.tw, h:trap.th, vy:trap.speed, color:'#cc3344'};
     if (trap.msg) troll(trap.msg);
   }
 
@@ -1526,7 +1526,7 @@ function render() {
 
   if (lvl.teleportPads) {
     for (const tp of lvl.teleportPads) {
-      ctx.fillStyle = '#aa44ff';
+      ctx.fillStyle = '#cc3344';
       ctx.fillRect(tp.x, tp.y, tp.w, tp.h);
       ctx.fillStyle = 'rgba(255,255,255,0.2)';
       ctx.fillRect(tp.x, tp.y, tp.w, 3);
@@ -1740,6 +1740,62 @@ window.showWin = function() {
   markLevelBeaten(curLevel - 1);
   _origShowWin();
 };
+
+// ─── menu keyboard cursor ─────────────────────────────────────────────────────
+(function() {
+  // Virtual cursor — only active when game is not running
+  const cur = document.createElement('div');
+  cur.id = 'menuCursor';
+  cur.style.cssText = `
+    position:fixed; width:16px; height:16px; z-index:9999; pointer-events:none;
+    transition: left 0.05s, top 0.05s;
+  `;
+  cur.innerHTML = `<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="0,0 0,14 4,10 7,16 9,15 6,9 11,9" fill="#f0c060" stroke="#3a0500" stroke-width="1.2"/>
+  </svg>`;
+  document.body.appendChild(cur);
+
+  let cx = window.innerWidth / 2;
+  let cy = window.innerHeight / 2;
+  const SPEED = 8;
+  const held = {};
+
+  document.addEventListener('keydown', e => { held[e.code] = true; });
+  document.addEventListener('keyup',   e => { held[e.code] = false; });
+
+  function menuActive() {
+    return !gameActive ||
+      document.getElementById('startOverlay').style.display !== 'none' ||
+      document.getElementById('levelSelectOverlay').style.display !== 'none';
+  }
+
+  function tick() {
+    if (menuActive()) {
+      cur.style.display = 'block';
+      if (held['ArrowLeft']  || held['KeyA']) cx -= SPEED;
+      if (held['ArrowRight'] || held['KeyD']) cx += SPEED;
+      if (held['ArrowUp']    || held['KeyW']) cy -= SPEED;
+      if (held['ArrowDown']  || held['KeyS']) cy += SPEED;
+      cx = Math.max(0, Math.min(window.innerWidth-2,  cx));
+      cy = Math.max(0, Math.min(window.innerHeight-2, cy));
+      cur.style.left = cx + 'px';
+      cur.style.top  = cy + 'px';
+    } else {
+      cur.style.display = 'none';
+    }
+    requestAnimationFrame(tick);
+  }
+  tick();
+
+  // Space = click whatever is under the cursor
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && menuActive()) {
+      e.preventDefault();
+      const el = document.elementFromPoint(cx, cy);
+      if (el) el.click();
+    }
+  });
+})();
 
 // ─── start ────────────────────────────────────────────────────────────────────
 document.getElementById('startBtn').addEventListener('click', () => {
