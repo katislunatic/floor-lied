@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Floor Lied</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -40,6 +40,42 @@ body {
   text-shadow:0 0 8px #ff9900;
 }
 #controls { display:none; }
+
+/* ── MOBILE TOUCH CONTROLS ── */
+#mobileControls {
+  display:none;
+  position:fixed; bottom:0; left:0; right:0;
+  height:140px; z-index:7;
+  pointer-events:none;
+}
+#mobileControls.active { display:block; }
+#btnLeft, #btnRight {
+  position:absolute; bottom:20px;
+  width:70px; height:70px; border-radius:50%;
+  background:rgba(240,192,96,0.25);
+  border:3px solid rgba(240,192,96,0.5);
+  pointer-events:all;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; color:rgba(240,192,96,0.8);
+  user-select:none; -webkit-user-select:none;
+  touch-action:none;
+}
+#btnLeft  { left:20px; }
+#btnRight { left:110px; }
+#btnJump {
+  position:absolute; bottom:20px; right:20px;
+  width:80px; height:80px; border-radius:50%;
+  background:rgba(240,192,96,0.25);
+  border:3px solid rgba(240,192,96,0.5);
+  pointer-events:all;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; color:rgba(240,192,96,0.8);
+  user-select:none; -webkit-user-select:none;
+  touch-action:none;
+}
+#btnLeft:active, #btnRight:active, #btnJump:active {
+  background:rgba(240,192,96,0.5);
+}
 /* ESC / pause button — sits top-left of the canvas area */
 #pauseBtn {
   position:fixed; top:10px; left:calc(50vw - 300px);
@@ -302,6 +338,13 @@ body {
 </div>
 
 <div id="controls"></div>
+
+<!-- mobile touch controls -->
+<div id="mobileControls">
+  <div id="btnLeft">◀</div>
+  <div id="btnRight">▶</div>
+  <div id="btnJump">▲</div>
+</div>
 
 <script>
 const canvas = document.getElementById('c');
@@ -1841,6 +1884,70 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   document.getElementById('winOverlay').style.display = 'none';
   showLevelSelect();
 });
+// ─── mobile / touch support ───────────────────────────────────────────────────
+(function() {
+  const isMobile = () => ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
+  // Show mobile controls during gameplay
+  function updateMobileControls() {
+    const mc = document.getElementById('mobileControls');
+    if (isMobile() && gameActive && !paused) {
+      mc.classList.add('active');
+    } else {
+      mc.classList.remove('active');
+    }
+  }
+  setInterval(updateMobileControls, 200);
+
+  // Button touch → inject into K object
+  function bindBtn(id, code) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('touchstart', e => { e.preventDefault(); K[code] = true; },  {passive:false});
+    el.addEventListener('touchend',   e => { e.preventDefault(); K[code] = false; }, {passive:false});
+    el.addEventListener('touchcancel',e => { e.preventDefault(); K[code] = false; }, {passive:false});
+  }
+  bindBtn('btnLeft',  'ArrowLeft');
+  bindBtn('btnRight', 'ArrowRight');
+  bindBtn('btnJump',  'Space');
+
+  // Scale canvas to fit mobile screen while keeping aspect ratio
+  function scaleCanvas() {
+    if (!isMobile()) return;
+    const c = document.getElementById('c');
+    const scaleX = window.innerWidth / 600;
+    const scaleY = (window.innerHeight - 140) / 360; // leave room for controls
+    const scale = Math.min(scaleX, scaleY);
+    c.style.width  = (600 * scale) + 'px';
+    c.style.height = (360 * scale) + 'px';
+    // also scale HUD
+    const hud = document.getElementById('hud');
+    hud.style.width = (600 * scale) + 'px';
+  }
+  scaleCanvas();
+  window.addEventListener('resize', scaleCanvas);
+
+  // Touch on menus = tap to click (for start/level select on mobile)
+  // The level select doors and buttons respond to touch natively via click events
+  // Just make sure overlays respond to touch
+  document.addEventListener('touchstart', e => {
+    // update cursor position to touch point for Space-click compatibility
+    if (e.touches.length > 0) {
+      const t = e.touches[0];
+      // fire a synthetic click on whatever was touched in menu screens
+      const startOv = document.getElementById('startOverlay');
+      const lsOv    = document.getElementById('levelSelectOverlay');
+      const winOv   = document.getElementById('winOverlay');
+      const pauseOv = document.getElementById('pauseOverlay');
+      const onMenu  = [startOv, lsOv, winOv, pauseOv].some(el =>
+        el && el.style.display !== 'none' && el.style.display !== ''
+      );
+      if (onMenu) {
+        // let native touch->click handle it — no extra action needed
+      }
+    }
+  }, {passive:true});
+})();
 </script>
 </body>
 </html>
