@@ -1741,17 +1741,20 @@ window.showWin = function() {
   _origShowWin();
 };
 
-// ─── custom cursor (mouse + keyboard controlled) ─────────────────────────────
+// ─── custom cursor (keyboard only — WASD/arrows move, Space clicks) ──────────
 (function() {
-  // Hide the real cursor everywhere
+  // Hide real system cursor
   document.documentElement.style.cursor = 'none';
+  document.addEventListener('mousemove', () => {
+    document.documentElement.style.cursor = 'none';
+  });
 
   const cur = document.createElement('div');
   cur.id = 'customCursor';
   cur.style.cssText = `
     position:fixed; width:20px; height:20px; z-index:99999;
-    pointer-events:none; left:0; top:0;
-    transform: translate(-2px, -2px);
+    pointer-events:none;
+    left:0; top:0;
   `;
   cur.innerHTML = `<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
     <polygon points="2,1 2,17 6,12 9,19 12,18 9,11 15,11" fill="#f0c060" stroke="#3a0500" stroke-width="1.5"/>
@@ -1760,16 +1763,11 @@ window.showWin = function() {
 
   let cx = window.innerWidth / 2;
   let cy = window.innerHeight / 2;
-  const SPEED = 7;
   const held = {};
+  // acceleration-based movement for smooth feel
+  let vx = 0, vy = 0;
+  const ACCEL = 1.8, FRICTION = 0.72, MAX = 18;
 
-  // Follow real mouse
-  document.addEventListener('mousemove', e => {
-    cx = e.clientX;
-    cy = e.clientY;
-  });
-
-  // Track keys for keyboard movement
   document.addEventListener('keydown', e => { held[e.code] = true; });
   document.addEventListener('keyup',   e => { held[e.code] = false; });
 
@@ -1781,29 +1779,48 @@ window.showWin = function() {
   }
 
   function tick() {
-    // Keyboard nudge — always works for cursor movement
-    if (held['ArrowLeft'])  cx -= SPEED;
-    if (held['ArrowRight']) cx += SPEED;
-    if (held['ArrowUp'])    cy -= SPEED;
-    if (held['ArrowDown'])  cy += SPEED;
-    cx = Math.max(0, Math.min(window.innerWidth  - 2, cx));
-    cy = Math.max(0, Math.min(window.innerHeight - 2, cy));
-    cur.style.left = cx + 'px';
-    cur.style.top  = cy + 'px';
+    if (menuActive()) {
+      cur.style.display = 'block';
+      // accelerate with WASD or arrows
+      if (held['ArrowLeft']  || held['KeyA']) vx -= ACCEL;
+      if (held['ArrowRight'] || held['KeyD']) vx += ACCEL;
+      if (held['ArrowUp']    || held['KeyW']) vy -= ACCEL;
+      if (held['ArrowDown']  || held['KeyS']) vy += ACCEL;
+      vx *= FRICTION; vy *= FRICTION;
+      vx = Math.max(-MAX, Math.min(MAX, vx));
+      vy = Math.max(-MAX, Math.min(MAX, vy));
+      cx += vx; cy += vy;
+      cx = Math.max(0, Math.min(window.innerWidth  - 2, cx));
+      cy = Math.max(0, Math.min(window.innerHeight - 2, cy));
+      cur.style.left = cx + 'px';
+      cur.style.top  = cy + 'px';
+    } else {
+      cur.style.display = 'none';
+      vx = 0; vy = 0;
+    }
     requestAnimationFrame(tick);
   }
   tick();
 
-  // Space = click under cursor (on menus/pause)
+  // Space = click element under cursor
   document.addEventListener('keydown', e => {
     if (e.code === 'Space' && menuActive()) {
       e.preventDefault();
-      const el = document.elementFromPoint(cx, cy);
+      // find topmost clickable element at cursor position
+      cur.style.display = 'none'; // hide cursor so it doesn't block elementFromPoint
+      const el = document.elementFromPoint(cx + 2, cy + 2);
+      cur.style.display = 'block';
       if (el) el.click();
     }
   });
 
-  // Real mouse click still works normally — just pass through since pointer-events:none
+  // Also support mouse click — update cursor pos on mouse move too
+  document.addEventListener('mousemove', e => {
+    if (menuActive()) { cx = e.clientX; cy = e.clientY; }
+  });
+  document.addEventListener('click', e => {
+    if (menuActive()) { cx = e.clientX; cy = e.clientY; }
+  });
 })();
 
 // ─── start ────────────────────────────────────────────────────────────────────
