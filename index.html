@@ -1276,8 +1276,8 @@ function update() {
 
 // ─── draw ─────────────────────────────────────────────────────────────────────
 const PLAT_COLORS = {
-  default: '#e8a84a',
-  collapse: '#c8823a',
+  default: '#7a5010',
+  collapse: '#7a5010',
   slideRight: '#4080a0',
   deadly: '#cc3344',
   slippery: '#80b0d0',
@@ -1307,11 +1307,8 @@ function drawPlatform(pl) {
   }
   ctx.fillStyle = col;
   ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, pl.h);
-  // only draw shine on elevated platforms, not floor-level ones
-  if (pl.y < 315) {
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, 3);
-  }
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, 3);
   ctx.globalAlpha = 1;
   if (pl.special === 'collapse' && pl.collapseTimer > 0) ctx.restore();
 }
