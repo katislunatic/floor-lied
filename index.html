@@ -318,8 +318,8 @@ function makeLevels() {
         {x:460, y:278, w:140, h:20},
       ],
       traps:[
-        { trigger:'playerX', val:190, fired:false,
-          action:'floorSlide', speed:3.2, msg:"the floor is lying" }
+        { trigger:'playerX', val:350, fired:false,
+          action:'floorSlide', speed:5.5, msg:"the floor is lying" }
       ],
     },
 
@@ -342,12 +342,12 @@ function makeLevels() {
         {x:496, y:308, w:58, h:12, revealed:false, color:'#cc3344'},
       ],
       traps:[
-        { trigger:'coinCollect', coinIdx:3, fired:false,
+        { trigger:'playerX', val:347, fired:false,
           action:'revealSpikes', msg:"free coins they said" }
       ],
     },
 
-    // ── 14: Jump pads ─────────────────────────────────────────────────────────
+    // ── 14: Jump pads — green launches you into ceiling spikes, red looks deadly but moves spike away ─
     {
       name:"14 - HELPFUL JUMP PAD",
       bg:'#1c201c',
@@ -357,11 +357,14 @@ function makeLevels() {
         {x:0, y:320, w:600, h:40},
       ],
       jumpPads:[
-        {x:110, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
-        {x:250, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
-        {x:375, y:316, w:50, h:10, boost:-16, color:'#ff6600',
-         ceilSpike:{x:356, y:28, w:88, h:22, active:true, color:'#cc3344'}},
-        {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+        {x:110, y:316, w:50, h:10, boost:-13, color:'#00cc66',
+         ceilSpike:{x:91, y:28, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+        {x:250, y:316, w:50, h:10, boost:-13, color:'#00cc66',
+         ceilSpike:{x:231, y:28, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+        {x:375, y:316, w:50, h:10, boost:-13, color:'#ff6600',
+         ceilSpike:{x:356, y:28, w:88, h:22, active:true, color:'#cc3344'}, redPad:true},
+        {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66',
+         ceilSpike:{x:459, y:28, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
       ],
       traps:[],
     },
@@ -888,12 +891,82 @@ function update() {
   // ── jump pads ────────────────────────────────────────────────────────────
   if (lvl.jumpPads) {
     for (const jp of lvl.jumpPads) {
-      if (overlaps(p.x,p.y+p.h-2,p.w,4, jp.x,jp.y,jp.w,jp.h) && p.vy >= 0) {
+      const onPad = overlaps(p.x,p.y+p.h-2,p.w,4, jp.x,jp.y,jp.w,jp.h) && p.vy >= 0;
+      if (onPad) {
         p.vy = jp.boost;
+
+        // GREEN: launch up, spike hidden at ceiling, starts sliding down when player hits near top
+        if (jp.triggersSpike && jp.ceilSpike && !jp.ceilSpike._triggered) {
+          jp.ceilSpike._triggered = true;
+          jp.ceilSpike.active = true;
+          jp.ceilSpike.y = 20;
+          jp.ceilSpike._sliding = false;
+          jp.ceilSpike._done = false;
+          troll("helpful!");
+        }
+
+        // RED: player touches pad, starts flying up toward spike — spike retracts at last second
+        if (jp.redPad && jp.ceilSpike && !jp.ceilSpike._retracting && !jp.ceilSpike._returning && !jp.ceilSpike._retracted) {
+          jp.ceilSpike.active = true;
+          jp.ceilSpike.y = 20; // make sure spike is visible at ceiling
+          jp.ceilSpike._retracting = false;
+          jp.ceilSpike._waitRetract = true; // wait until player gets close, THEN retract
+          troll("uh oh");
+        }
       }
+
+      // GREEN: once player reaches near ceiling, slide spike down steadily
+      if (jp.triggersSpike && jp.ceilSpike && jp.ceilSpike._triggered && !jp.ceilSpike._sliding && !jp.ceilSpike._done) {
+        if (p.y < 70) jp.ceilSpike._sliding = true;
+      }
+      if (jp.triggersSpike && jp.ceilSpike && jp.ceilSpike._sliding && !jp.ceilSpike._done) {
+        jp.ceilSpike.y += 1.4;
+        if (jp.ceilSpike.y >= 298) { jp.ceilSpike.y = 298; jp.ceilSpike._done = true; }
+      }
+
+      // RED: wait until player is close to spike, then retract it upward
+      if (jp.redPad && jp.ceilSpike) {
+        if (jp.ceilSpike._waitRetract && p.y < 90) {
+          // player is close — retract NOW
+          jp.ceilSpike._waitRetract = false;
+          jp.ceilSpike._retracting = true;
+          troll("...wait what");
+        }
+        if (jp.ceilSpike._retracting) {
+          jp.ceilSpike.y -= 2.5;
+          if (jp.ceilSpike.y + jp.ceilSpike.h < 0) {
+            jp.ceilSpike._retracting = false;
+            jp.ceilSpike._retracted = true;
+            jp.ceilSpike._returnTimer = 90;
+            jp.ceilSpike.active = false;
+          }
+        }
+        if (jp.ceilSpike._retracted) {
+          jp.ceilSpike._returnTimer--;
+          if (jp.ceilSpike._returnTimer <= 0) {
+            jp.ceilSpike.y = -jp.ceilSpike.h;
+            jp.ceilSpike._retracted = false;
+            jp.ceilSpike._returning = true;
+            jp.ceilSpike.active = true;
+            troll("it's back");
+          }
+        }
+        if (jp.ceilSpike._returning) {
+          jp.ceilSpike.y += 1.5;
+          if (jp.ceilSpike.y >= 20) {
+            jp.ceilSpike.y = 20;
+            jp.ceilSpike._returning = false;
+            jp.ceilSpike._waitRetract = false;
+            jp.ceilSpike._retracting = false;
+            jp.ceilSpike._retracted = false;
+          }
+        }
+      }
+
+      // collision — kill player if they touch any active spike
       if (jp.ceilSpike && jp.ceilSpike.active) {
         if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, jp.ceilSpike.x,jp.ceilSpike.y,jp.ceilSpike.w,jp.ceilSpike.h)) {
-          die("the yellow one was a trap"); return;
+          die("ow"); return;
         }
       }
     }
@@ -1083,8 +1156,16 @@ function render() {
     for (const jp of lvl.jumpPads) {
       ctx.fillStyle = jp.color;
       ctx.fillRect(jp.x, jp.y, jp.w, jp.h);
-      if (jp.ceilSpike && jp.ceilSpike.active) {
-        drawSpikeTri(jp.ceilSpike.x, jp.ceilSpike.y, jp.ceilSpike.w, jp.ceilSpike.h, jp.ceilSpike.color, false);
+      // draw ceiling spike
+      if (jp.ceilSpike) {
+        // red pad: always draw spike as long as it's on screen (even while retracting/returning)
+        // green pad: only draw once triggered
+        const shouldDraw = jp.redPad
+          ? (jp.ceilSpike.y > -jp.ceilSpike.h - 5)
+          : jp.ceilSpike.active;
+        if (shouldDraw) {
+          drawSpikeTri(jp.ceilSpike.x, jp.ceilSpike.y, jp.ceilSpike.w, jp.ceilSpike.h, jp.ceilSpike.color, false);
+        }
       }
     }
   }
