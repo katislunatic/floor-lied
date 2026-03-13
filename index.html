@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Floor Lied</title>
+<title>A "Normal" Platformer</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -542,7 +542,11 @@ function makeLevels() {
       ],
       traps:[
         { trigger:'playerX', val:300, fired:false,
-          action:'flipControls', msg:"wait... left is right?" }
+          action:'flipControls', msg:"wait... left is right?" },
+        // after controls flip, player instinctively presses right (which goes left)
+        // a hole opens just behind them when they drift back past x=260
+        { trigger:'playerXBelow_afterFlip', val:260, fired:false,
+          action:'removeFloorChunk', cx:180, cw:80, msg:"nice instincts" },
       ],
     },
 
@@ -914,15 +918,18 @@ function fireTrap(trap) {
   const action = trap.action;
 
   if (action === 'removeFloorChunk') {
-    lvl.platforms = lvl.platforms.filter(pl =>
-      !(pl.y >= 310 && pl.x >= trap.cx && pl.x <= trap.cx + trap.cw)
-    );
-    const orig = lvl.platforms.find(pl => pl.y === 320 && pl.w === 600);
-    if (orig) {
-      lvl.platforms = lvl.platforms.filter(p => p !== orig);
-      lvl.platforms.push({x:0,     y:320, w:trap.cx,         h:40});
-      lvl.platforms.push({x:trap.cx+trap.cw, y:320, w:600-(trap.cx+trap.cw), h:40});
-    }
+    const cx = trap.cx, cw = trap.cw;
+    const toAdd = [];
+    lvl.platforms = lvl.platforms.filter(pl => {
+      if (pl.y < 310 || pl._gone) return true;
+      // check if this platform overlaps the hole zone
+      if (pl.x + pl.w <= cx || pl.x >= cx + cw) return true; // no overlap, keep
+      // split it
+      if (pl.x < cx) toAdd.push({x:pl.x, y:pl.y, w:cx - pl.x, h:pl.h});
+      if (pl.x + pl.w > cx + cw) toAdd.push({x:cx+cw, y:pl.y, w:(pl.x+pl.w)-(cx+cw), h:pl.h});
+      return false; // remove original
+    });
+    lvl.platforms.push(...toAdd);
     if (trap.msg) troll(trap.msg);
   }
 
@@ -1302,6 +1309,8 @@ function update() {
       if (t.trigger === 'playerX' && p.x+p.w/2 >= t.val) fireTrap(t);
       // fires when player walks left close to the moved door — only after door has moved
       if (t.trigger === 'playerXBelow_afterDoor' && lvl.door[0] < 100 && p.x+p.w/2 <= t.val) fireTrap(t);
+      // fires when player drifts back left after controls have flipped
+      if (t.trigger === 'playerXBelow_afterFlip' && flipControls && p.x+p.w/2 <= t.val) fireTrap(t);
     }
   }
 
@@ -1826,6 +1835,8 @@ window.showWin = function() {
            (win    && win.style.display    !== 'none' && win.style.display !== '');
   }
 
+  const isTouchDevice = () => ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+
   function tick() {
     // always show custom cursor, always move with keys
     if (held['ArrowLeft']  || held['KeyA']) vx -= ACCEL;
@@ -1840,8 +1851,12 @@ window.showWin = function() {
     cy = Math.max(0, Math.min(window.innerHeight - 2, cy));
     cur.style.left = cx + 'px';
     cur.style.top  = cy + 'px';
-    // show cursor on menus/pause, hide during active gameplay
-    cur.style.display = (!gameActive || menuActive()) ? 'block' : 'none';
+    // hide cursor on touch/mobile devices entirely
+    if (isTouchDevice()) {
+      cur.style.display = 'none';
+    } else {
+      cur.style.display = (!gameActive || menuActive()) ? 'block' : 'none';
+    }
     requestAnimationFrame(tick);
   }
   tick();
