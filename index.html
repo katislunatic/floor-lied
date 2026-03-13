@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Floor lied</title>
+<title>A "Normal" Platformer</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
@@ -314,6 +314,10 @@ let curLevel = 0;
 let gameActive = false;
 let frame = 0;
 let trollTimeout = null;
+
+// ─── door entry animation ─────────────────────────────────────────────────────
+let doorAnim = null; // null = no anim, else {x,y,phase,timer}
+// phases: 'entering' (player walks into open door), 'closing' (door shuts), 'done'
 
 // ─── input ────────────────────────────────────────────────────────────────────
 const K = {};
@@ -829,6 +833,7 @@ function loadLevel(idx) {
   gravFlipped = false;
   gravFlipUsed = false;
   flashRevealTimer = 0;
+  doorAnim = null;
   frame = 0;
   spawnPlayer(lvl.spawn[0], lvl.spawn[1]);
   document.getElementById('levelName').textContent = `LEVEL ${lvl.name}`;
@@ -958,6 +963,33 @@ function fireTrap(trap) {
 // ─── update ───────────────────────────────────────────────────────────────────
 function update() {
   if (!gameActive || !p || p.dead) return;
+  // if door animation is running, only advance it (no movement/death)
+  if (doorAnim) {
+    doorAnim.timer++;
+    if (doorAnim.phase === 'opening') {
+      // door swings open over 18 frames, player stays put
+      p.vx = 0; p.vy = 0;
+      if (doorAnim.timer >= 18) {
+        // snap player into door centre, start entering
+        p.x = doorAnim.x + (26 - p.w) / 2;
+        p.y = doorAnim.y + (38 - p.h) / 2;
+        doorAnim.phase = 'entering'; doorAnim.timer = 0;
+      }
+    } else if (doorAnim.phase === 'entering') {
+      // player is inside door for 18 frames
+      if (doorAnim.timer >= 18) {
+        doorAnim.phase = 'closing'; doorAnim.timer = 0;
+      }
+    } else if (doorAnim.phase === 'closing') {
+      if (doorAnim.timer >= 22) {
+        doorAnim = null;
+        markLevelBeaten(curLevel);
+        curLevel++;
+        loadLevel(curLevel);
+      }
+    }
+    return;
+  }
   frame++;
 
   const GRAV  = gravFlipped ? -0.5 : 0.5;
@@ -1234,17 +1266,18 @@ function update() {
 
   // ── door check ───────────────────────────────────────────────────────────
   const [dx, dy] = lvl.door;
-  if (overlaps(p.x,p.y,p.w,p.h, dx,dy,26,38)) {
-    markLevelBeaten(curLevel);
-    curLevel++;
-    loadLevel(curLevel);
+  if (!doorAnim && overlaps(p.x,p.y,p.w,p.h, dx,dy,26,38)) {
+    p.vx = 0; p.vy = 0;
+    // start with door opening phase — player stands in front
+    doorAnim = { x:dx, y:dy, phase:'opening', timer:0, px:p.x, py:p.y };
   }
+
 }
 
 // ─── draw ─────────────────────────────────────────────────────────────────────
 const PLAT_COLORS = {
-  default: '#7a5010',
-  collapse: '#7a5010',
+  default: '#e8a84a',
+  collapse: '#c8823a',
   slideRight: '#4080a0',
   deadly: '#cc3344',
   slippery: '#80b0d0',
@@ -1301,16 +1334,77 @@ function drawSpikeTri(x, y, w, h, color, pointUp) {
 }
 
 function drawDoor(x, y) {
+  const DW = 26, DH = 38;
+  const isAnimating = doorAnim && doorAnim.x === x && doorAnim.y === y;
+
+  // How open is the door? 0=fully closed, 1=fully open
+  let openAmt = 1.0; // default: open
+  if (isAnimating) {
+    if (doorAnim.phase === 'opening') {
+      openAmt = doorAnim.timer / 18; // swings open
+    } else if (doorAnim.phase === 'closing') {
+      openAmt = 1.0 - (doorAnim.timer / 22); // swings shut
+    }
+    // 'entering' phase: stays fully open
+  }
+
+  // ── draw frame/surround ──
   ctx.fillStyle = '#cc9944';
-  ctx.fillRect(x, y, 26, 38);
-  ctx.fillStyle = '#664400';
-  ctx.fillRect(x+3, y+3, 20, 35);
+  ctx.fillRect(x, y, DW, DH);
   ctx.fillStyle = '#ffcc66';
-  ctx.fillRect(x, y, 26, 4);
-  ctx.fillStyle = '#ffcc00';
-  ctx.beginPath();
-  ctx.arc(x+19, y+22, 3, 0, Math.PI*2);
-  ctx.fill();
+  ctx.fillRect(x, y, DW, 4); // top trim
+
+  // ── dark interior behind door ──
+  ctx.fillStyle = '#221100';
+  ctx.fillRect(x+3, y+4, DW-6, DH-4);
+
+  // ── door panel (perspective swing: hinge on RIGHT, opens to the LEFT) ──
+  // When open, panel is very thin on the right. When closed, fills full interior.
+  // We simulate perspective by drawing a trapezoid-like shape using canvas transforms.
+  const innerW = DW - 6;
+  const panelW = Math.round(innerW * (1 - openAmt)); // 0 when open, full when closed
+
+  if (panelW > 0) {
+    // Back face of door (slightly darker, visible when swinging)
+    ctx.fillStyle = '#3a1a00';
+    ctx.fillRect(x+3, y+4, panelW, DH-4);
+    // Front face highlight strip on leading edge
+    ctx.fillStyle = '#885522';
+    ctx.fillRect(x+3, y+4, Math.min(3, panelW), DH-4);
+    // Wood grain lines
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    for (let gi = 1; gi < 3 && gi*4 < panelW; gi++) {
+      ctx.fillRect(x+3+gi*4, y+6, 1, DH-8);
+    }
+  }
+
+  // knob on the LEFT edge of panel (moves as door swings)
+  if (panelW > 4) {
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.arc(x+3+Math.min(panelW-4, innerW-4), y+22, 3, 0, Math.PI*2);
+    ctx.fill();
+  } else if (openAmt > 0.85) {
+    // knob visible on right side of frame when door is open
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.arc(x+DW-6, y+22, 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // ── player silhouette inside door during 'entering' phase ──
+  if (isAnimating && doorAnim.phase === 'entering') {
+    const alpha = Math.min(0.85, doorAnim.timer / 8);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#110800';
+    // body
+    ctx.fillRect(x+7, y+12, 10, 18);
+    // head
+    ctx.beginPath();
+    ctx.arc(x+12, y+10, 5, 0, Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawPlayer() {
