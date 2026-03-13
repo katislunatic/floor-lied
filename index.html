@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Floor Lied — A Troll Platformer</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 * { margin:0; padding:0; box-sizing:border-box; }
 body {
   background:#111;
@@ -32,12 +34,10 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
 /* overlays */
 .overlay {
   position:fixed; inset:0;
-  background:rgba(0,0,0,.88);
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   z-index:10;
 }
-.overlay h1 { font-size:32px; color:#fff; margin-bottom:8px; letter-spacing:2px; }
 .overlay .sub { font-size:13px; color:#888; margin-bottom:4px; line-height:1.8; text-align:center; }
 .overlay .warn { color:#ff4444; font-size:12px; margin-top:4px; }
 .btn {
@@ -46,20 +46,110 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
   border:none; font-size:13px; font-weight:700;
   cursor:pointer; letter-spacing:1px;
   transition:background .15s, color .15s;
+  font-family:'Press Start 2P', monospace;
 }
 .btn:hover { background:#ffcc00; }
 #winOverlay { display:none; }
 #winOverlay h1 { color:#00ff99; }
 #winDeaths { color:#aaa; font-size:13px; margin-top:8px; }
+
+/* ── START SCREEN ── */
+#startOverlay {
+  background:#c45a00;
+  overflow:hidden;
+}
+#startBg {
+  position:absolute; inset:0;
+  background: linear-gradient(to bottom, #5a0a00 0%, #8b1a00 25%, #c45a00 55%, #e8a020 100%);
+}
+#startFire {
+  position:absolute; top:0; left:0; right:0;
+  height:220px;
+  overflow:hidden;
+}
+#startContent {
+  position:relative; z-index:2;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  width:100%;
+  margin-top:80px;
+}
+#startTitle {
+  font-family:'Press Start 2P', monospace;
+  font-size:52px;
+  color:#e8a020;
+  text-shadow: 4px 4px 0 #5a0a00, 8px 8px 0 #3a0500;
+  letter-spacing:4px;
+  margin-bottom:10px;
+  animation: titleBob 2s ease-in-out infinite;
+}
+@keyframes titleBob {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-6px); }
+}
+#startTagline {
+  font-family:'Press Start 2P', monospace;
+  font-size:9px;
+  color:#f0c060;
+  letter-spacing:2px;
+  margin-bottom:40px;
+  opacity:0.85;
+}
+#startBtn {
+  font-size:11px;
+  padding:14px 40px;
+  background:#e8a020;
+  color:#3a0500;
+  border:3px solid #f0c060;
+  box-shadow: 4px 4px 0 #5a0a00;
+  animation: btnPulse 1.4s ease-in-out infinite;
+}
+#startBtn:hover { background:#f0c060; transform:translate(-2px,-2px); box-shadow:6px 6px 0 #5a0a00; }
+@keyframes btnPulse {
+  0%,100% { box-shadow:4px 4px 0 #5a0a00; }
+  50% { box-shadow:4px 4px 16px #ff6600aa, 4px 4px 0 #5a0a00; }
+}
+#startHint {
+  font-family:'Press Start 2P', monospace;
+  font-size:7px;
+  color:#c07820;
+  margin-top:16px;
+  letter-spacing:1px;
+}
+/* ground spikes at bottom of start screen */
+#startSpikes {
+  position:absolute; bottom:0; left:0; right:0;
+  height:60px;
+}
+
+/* win screen */
+#winOverlay { background:rgba(0,0,0,.92); }
+#winOverlay h1 {
+  font-family:'Press Start 2P', monospace;
+  font-size:28px;
+  color:#00ff99;
+  text-shadow: 3px 3px 0 #005533;
+  margin-bottom:12px;
+}
 </style>
 </head>
 <body>
 
 <div class="overlay" id="startOverlay">
-  <h1>FLOOR LIED</h1>
-  <div class="sub">It's just a normal platformer.<br>Get to the door. That's all.</div>
-  <div class="warn">← → to move &nbsp;|&nbsp; ↑ or Space to jump</div>
-  <button class="btn" id="startBtn">PLAY</button>
+  <div id="startBg"></div>
+  <!-- animated fire canvas -->
+  <canvas id="startFire" id="fireCvs"></canvas>
+  <!-- ground spikes SVG -->
+  <svg id="startSpikes" viewBox="0 0 600 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="0,60 0,20 20,60 40,5 60,60 80,15 100,60 120,8 140,60 160,18 180,60 200,10 220,60 240,14 260,60 280,6 300,60 320,16 340,60 360,9 380,60 400,12 420,60 440,7 460,60 480,17 500,60 520,11 540,60 560,13 580,60 600,8 600,60" fill="#5a0a00"/>
+    <polygon points="0,60 10,30 20,60 40,15 60,60 80,22 100,60 120,18 140,60 160,25 180,60 200,20 220,60 240,22 260,60 280,16 300,60 320,24 340,60 360,19 380,60 400,21 420,60 440,17 460,60 480,26 500,60 520,20 540,60 560,22 580,60 600,18 600,60" fill="#8b1a00" opacity="0.7"/>
+  </svg>
+  <div id="startContent">
+    <div id="startTitle">FLOOR LIED</div>
+    <div id="startTagline">A TROLL PLATFORMER</div>
+    <button class="btn" id="startBtn">▶ PLAY</button>
+    <div id="startHint">← → MOVE &nbsp;|&nbsp; ↑ SPACE JUMP</div>
+  </div>
 </div>
 
 <div class="overlay" id="winOverlay">
@@ -78,6 +168,59 @@ canvas { display:block; border:2px solid #333; background:#1a1a2e; }
 <div id="controls">ARROW KEYS / WASD — MOVE &amp; JUMP &nbsp;|&nbsp; SPACE — JUMP</div>
 
 <script>
+// ── Fire animation on start screen ────────────────────────────────────────────
+(function() {
+  const fc = document.getElementById('startFire');
+  if (!fc) return;
+  const fw = window.innerWidth, fh = 220;
+  fc.width = fw; fc.height = fh;
+  const fctx = fc.getContext('2d');
+  // flame particles
+  const flames = Array.from({length:80}, () => ({
+    x: Math.random()*fw,
+    y: fh - Math.random()*60,
+    vy: -(1 + Math.random()*2.5),
+    size: 8 + Math.random()*28,
+    life: Math.random(),
+    speed: 0.012 + Math.random()*0.018,
+  }));
+  function drawFire() {
+    fctx.clearRect(0,0,fw,fh);
+    for (const f of flames) {
+      f.life += f.speed;
+      if (f.life > 1) {
+        f.life = 0;
+        f.x = Math.random()*fw;
+        f.y = fh - Math.random()*20;
+        f.size = 8 + Math.random()*28;
+      }
+      f.y += f.vy;
+      const alpha = 1 - f.life;
+      const r = Math.floor(220 + 35*alpha);
+      const g = Math.floor(60 + 80*(1-f.life));
+      const b = 0;
+      const grad = fctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.size*(1-f.life*0.5));
+      grad.addColorStop(0, `rgba(${r},${g},${b},${alpha*0.9})`);
+      grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+      fctx.beginPath();
+      fctx.arc(f.x, f.y, f.size*(1-f.life*0.5), 0, Math.PI*2);
+      fctx.fillStyle = grad;
+      fctx.fill();
+    }
+    // dark top gradient overlay
+    const topGrad = fctx.createLinearGradient(0,0,0,fh);
+    topGrad.addColorStop(0,'rgba(50,0,0,0.85)');
+    topGrad.addColorStop(0.5,'rgba(80,10,0,0.3)');
+    topGrad.addColorStop(1,'rgba(0,0,0,0)');
+    fctx.fillStyle = topGrad;
+    fctx.fillRect(0,0,fw,fh);
+    if (document.getElementById('startOverlay').style.display !== 'none') {
+      requestAnimationFrame(drawFire);
+    }
+  }
+  drawFire();
+})();
+
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 const W = 600, H = 360;
@@ -495,7 +638,6 @@ function makeLevels() {
         {x:0,   y:320, w:120, h:40},
         {x:158, y:290, w:82,  h:16, invisible:true},
         {x:298, y:258, w:82,  h:16, invisible:true},
-        {x:432, y:228, w:82,  h:16, invisible:true},
         {x:440, y:188, w:100, h:20},
       ],
       traps:[
@@ -538,23 +680,25 @@ function makeLevels() {
       traps:[],
     },
 
-    // ── 24: Jump pads with orange trap ────────────────────────────────────────
+    // ── 24: Looks like solid floor — but 3 hidden pits open as you walk ─────────
+    // Floor looks totally normal. Three pits trigger one by one as you progress.
+    // Each pit is 55px wide — jumpable but you have to react fast.
     {
-      name:"24 - BOUNCY!",
-      bg:'#1a201a',
+      name:"24 - SOLID FLOOR",
+      bg:'#1a1a20',
       spawn:[30,290],
       door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
-      jumpPads:[
-        {x:108, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
-        {x:238, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
-        {x:358, y:316, w:50, h:10, boost:-15, color:'#ff6600',
-         ceilSpike:{x:340, y:28, w:86, h:20, active:true, color:'#cc3344'}},
-        {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66'},
+      traps:[
+        { trigger:'playerX', val:130, fired:false,
+          action:'removeFloorChunk', cx:155, cw:55, msg:"the floor lied" },
+        { trigger:'playerX', val:270, fired:false,
+          action:'removeFloorChunk', cx:300, cw:55, msg:"again?" },
+        { trigger:'playerX', val:400, fired:false,
+          action:'removeFloorChunk', cx:435, cw:55, msg:"one more" },
       ],
-      traps:[],
     },
 
     // ── 25: Grand finale ──────────────────────────────────────────────────────
