@@ -358,13 +358,13 @@ function makeLevels() {
       ],
       jumpPads:[
         {x:110, y:316, w:50, h:10, boost:-13, color:'#00cc66',
-         ceilSpike:{x:91, y:-200, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+         ceilSpike:{x:91,  y:-200, w:88, h:22, active:false, color:'#cc3344', _triggered:false, _state:'idle'}, triggersSpike:true},
         {x:250, y:316, w:50, h:10, boost:-13, color:'#00cc66',
-         ceilSpike:{x:231, y:-200, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+         ceilSpike:{x:231, y:-200, w:88, h:22, active:false, color:'#cc3344', _triggered:false, _state:'idle'}, triggersSpike:true},
         {x:375, y:316, w:50, h:10, boost:-13, color:'#ff6600',
-         ceilSpike:{x:356, y:20, w:88, h:22, active:true, color:'#cc3344'}, redPad:true},
+         ceilSpike:{x:356, y:20,   w:88, h:22, active:true,  color:'#cc3344', _state:'idle'}, redPad:true},
         {x:478, y:316, w:50, h:10, boost:-13, color:'#00cc66',
-         ceilSpike:{x:459, y:-200, w:88, h:22, active:false, color:'#cc3344'}, triggersSpike:true},
+         ceilSpike:{x:459, y:-200, w:88, h:22, active:false, color:'#cc3344', _triggered:false, _state:'idle'}, triggersSpike:true},
       ],
       traps:[],
     },
@@ -891,86 +891,88 @@ function update() {
   // ── jump pads ────────────────────────────────────────────────────────────
   if (lvl.jumpPads) {
     for (const jp of lvl.jumpPads) {
-      const onPad = overlaps(p.x,p.y+p.h-2,p.w,4, jp.x,jp.y,jp.w,jp.h) && p.vy >= 0;
-      if (onPad) {
+
+      // launch player when they step on pad
+      if (overlaps(p.x,p.y+p.h-2,p.w,4, jp.x,jp.y,jp.w,jp.h) && p.vy >= 0) {
         p.vy = jp.boost;
 
-        // GREEN: launch up, move spike to ceiling (invisible until it slides), start sliding when near top
-        if (jp.triggersSpike && jp.ceilSpike && !jp.ceilSpike._triggered) {
+        // GREEN: no spike visible yet. Once player is launched and gets near ceiling,
+        // spike slides down from ceiling, kills them, then disappears.
+        if (jp.triggersSpike && !jp.ceilSpike._triggered) {
           jp.ceilSpike._triggered = true;
+          jp.ceilSpike._state = 'waiting'; // waiting for player to reach top
+        }
+
+        // RED: spike is always at ceiling. When player touches pad and launches up,
+        // spike slides UP out of the way, then comes back down after a pause.
+        if (jp.redPad && jp.ceilSpike._state !== 'retracting' && jp.ceilSpike._state !== 'gone' && jp.ceilSpike._state !== 'returning') {
+          jp.ceilSpike._state = 'retracting';
+          troll("wait...");
+        }
+      }
+
+      // GREEN spike state machine
+      if (jp.triggersSpike && jp.ceilSpike._triggered) {
+        if (jp.ceilSpike._state === 'waiting' && p.y < 80) {
+          // player near ceiling — spike appears and slides down
+          jp.ceilSpike.y = 20;
+          jp.ceilSpike._state = 'sliding_down';
           jp.ceilSpike.active = true;
-          jp.ceilSpike.y = 20;  // now at ceiling, but won't slide yet
-          jp.ceilSpike._sliding = false;
-          jp.ceilSpike._done = false;
-          troll("helpful!");
         }
-
-        // RED: player touches pad, starts flying up toward spike — spike retracts at last second
-        if (jp.redPad && jp.ceilSpike && !jp.ceilSpike._retracting && !jp.ceilSpike._returning && !jp.ceilSpike._retracted) {
-          jp.ceilSpike.active = true;
-          jp.ceilSpike.y = 20; // make sure spike is visible at ceiling
-          jp.ceilSpike._retracting = false;
-          jp.ceilSpike._waitRetract = true; // wait until player gets close, THEN retract
-          troll("uh oh");
-        }
-      }
-
-      // GREEN: once player reaches near ceiling, slide spike down steadily
-      if (jp.triggersSpike && jp.ceilSpike && jp.ceilSpike._triggered && !jp.ceilSpike._sliding && !jp.ceilSpike._done) {
-        if (p.y < 70) jp.ceilSpike._sliding = true;
-      }
-      if (jp.triggersSpike && jp.ceilSpike && jp.ceilSpike._sliding && !jp.ceilSpike._done) {
-        jp.ceilSpike.y += 1.4;
-        if (jp.ceilSpike.y >= 298) { jp.ceilSpike.y = 298; jp.ceilSpike._done = true; }
-      }
-
-      // RED: wait until player is close to spike, then retract it upward
-      if (jp.redPad && jp.ceilSpike) {
-        if (jp.ceilSpike._waitRetract && p.y < 90) {
-          // player is close — retract NOW
-          jp.ceilSpike._waitRetract = false;
-          jp.ceilSpike._retracting = true;
-          troll("...wait what");
-        }
-        if (jp.ceilSpike._retracting) {
-          jp.ceilSpike.y -= 2.5;
-          if (jp.ceilSpike.y + jp.ceilSpike.h < 0) {
-            jp.ceilSpike._retracting = false;
-            jp.ceilSpike._retracted = true;
-            jp.ceilSpike._returnTimer = 90;
-            jp.ceilSpike.active = false;
+        if (jp.ceilSpike._state === 'sliding_down') {
+          jp.ceilSpike.y += 2.0;
+          if (jp.ceilSpike.y >= 280) {
+            jp.ceilSpike.y = 280;
+            jp.ceilSpike._state = 'done';
+            // disappear after a moment
+            setTimeout(() => {
+              jp.ceilSpike.active = false;
+              jp.ceilSpike.y = -200;
+              jp.ceilSpike._triggered = false;
+              jp.ceilSpike._state = 'idle';
+            }, 1200);
           }
         }
-        if (jp.ceilSpike._retracted) {
-          jp.ceilSpike._returnTimer--;
-          if (jp.ceilSpike._returnTimer <= 0) {
+      }
+
+      // RED spike state machine — spike always visible at ceiling when idle
+      if (jp.redPad) {
+        if (!jp.ceilSpike._state) jp.ceilSpike._state = 'idle';
+
+        if (jp.ceilSpike._state === 'retracting') {
+          jp.ceilSpike.y -= 3;
+          if (jp.ceilSpike.y + jp.ceilSpike.h < 0) {
             jp.ceilSpike.y = -jp.ceilSpike.h;
-            jp.ceilSpike._retracted = false;
-            jp.ceilSpike._returning = true;
-            jp.ceilSpike.active = true;
+            jp.ceilSpike._state = 'gone';
+            jp.ceilSpike._timer = 90;
+            troll("huh?");
+          }
+        }
+        if (jp.ceilSpike._state === 'gone') {
+          jp.ceilSpike._timer--;
+          if (jp.ceilSpike._timer <= 0) {
+            jp.ceilSpike._state = 'returning';
             troll("it's back");
           }
         }
-        if (jp.ceilSpike._returning) {
-          jp.ceilSpike.y += 1.5;
+        if (jp.ceilSpike._state === 'returning') {
+          jp.ceilSpike.y += 2;
           if (jp.ceilSpike.y >= 20) {
             jp.ceilSpike.y = 20;
-            jp.ceilSpike._returning = false;
-            jp.ceilSpike._waitRetract = false;
-            jp.ceilSpike._retracting = false;
-            jp.ceilSpike._retracted = false;
+            jp.ceilSpike._state = 'idle';
           }
         }
       }
 
-      // collision — kill player if they touch any active spike
-      if (jp.ceilSpike && jp.ceilSpike.active) {
+      // collision — only when spike is on screen and active
+      if (jp.ceilSpike && jp.ceilSpike.active && jp.ceilSpike.y >= 0) {
         if (overlaps(p.x+2,p.y+2,p.w-4,p.h-4, jp.ceilSpike.x,jp.ceilSpike.y,jp.ceilSpike.w,jp.ceilSpike.h)) {
           die("ow"); return;
         }
       }
     }
   }
+
 
   // ── coins ─────────────────────────────────────────────────────────────────
   if (lvl.coins) {
