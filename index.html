@@ -17,10 +17,11 @@ body {
   user-select:none;
   overflow:hidden;
 }
-/* fixed game canvas — centered, surrounded by warm bg */
+/* game canvas — fixed width, extends to bottom of screen */
 #c {
   display:block;
-  width:600px; height:360px;
+  width:600px;
+  height:calc(100vh - 60px);
   flex-shrink:0;
 }
 /* floating in-game HUD above canvas */
@@ -305,7 +306,8 @@ body {
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
-canvas.width = 600; canvas.height = 360;
+canvas.width = 600; canvas.height = Math.max(360, window.innerHeight - 60);
+window.addEventListener('resize', () => { canvas.height = Math.max(360, window.innerHeight - 60); });
 const W = 600, H = 360;
 
 // ─── state ────────────────────────────────────────────────────────────────────
@@ -1336,8 +1338,12 @@ function drawPlayer() {
 
 function render() {
   if (!lvl) return;
+  // Fill entire canvas with dark border color first — holes show this below
+  ctx.fillStyle = '#7a5010';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Draw game world (600x360) on top
   ctx.fillStyle = lvl.bg || '#e8a84a';
-  ctx.fillRect(0,0,W,H);
+  ctx.fillRect(0, 0, W, H);
 
   ctx.strokeStyle = 'rgba(255,255,255,0.025)';
   ctx.lineWidth = 1;
