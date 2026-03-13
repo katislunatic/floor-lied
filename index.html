@@ -41,6 +41,32 @@ body {
 }
 #controls { display:none; }
 
+/* ── LEVEL TRANSITION ── */
+#transition {
+  position:fixed; inset:0;
+  z-index:50;
+  pointer-events:none;
+  display:none;
+  overflow:hidden;
+  background:transparent;
+}
+#transCanvas {
+  position:absolute; inset:0;
+  width:100%; height:100%;
+}
+#transitionLabel {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Press Start 2P',monospace;
+  font-size:14px;
+  color:#f0c060;
+  text-shadow:2px 2px 0 #3a0500;
+  letter-spacing:3px;
+  opacity:0;
+  white-space:nowrap;
+  z-index:2;
+}
+
 /* ── MOBILE TOUCH CONTROLS ── */
 #mobileControls {
   display:none;
@@ -339,6 +365,12 @@ body {
 
 <div id="controls"></div>
 
+<!-- level transition overlay -->
+<div id="transition">
+  <canvas id="transCanvas"></canvas>
+  <div id="transitionLabel"></div>
+</div>
+
 <!-- mobile touch controls -->
 <div id="mobileControls">
   <div id="btnLeft">◀</div>
@@ -360,7 +392,8 @@ let frame = 0;
 let trollTimeout = null;
 
 // ─── door entry animation ─────────────────────────────────────────────────────
-let doorAnim = null; // null = no anim, else {x,y,phase,timer}
+let doorAnim = null;
+let transitioning = false; // true while level transition is playing // null = no anim, else {x,y,phase,timer}
 // phases: 'entering' (player walks into open door), 'closing' (door shuts), 'done'
 
 // ─── input ────────────────────────────────────────────────────────────────────
@@ -1014,6 +1047,7 @@ function fireTrap(trap) {
 // ─── update ───────────────────────────────────────────────────────────────────
 function update() {
   if (!gameActive || !p || p.dead) return;
+  if (transitioning) return; // block all input/movement during transition
   // if door animation is running, only advance it (no movement/death)
   if (doorAnim) {
     doorAnim.timer++;
@@ -1036,7 +1070,14 @@ function update() {
         doorAnim = null;
         markLevelBeaten(curLevel);
         curLevel++;
-        loadLevel(curLevel);
+        const nextDef = makeLevels()[curLevel];
+        const label = nextDef ? 'LEVEL ' + (curLevel+1) : 'YOU WIN!';
+        gameActive = false;
+        doTransition(label, () => {
+          loadLevel(curLevel);
+          gameActive = true;
+          loop();
+        });
       }
     }
     return;
@@ -1630,6 +1671,125 @@ function loop() {
   if (gameActive) requestAnimationFrame(loop);
 }
 
+// ─── level transition — jaws snap shut then open ─────────────────────────────
+function doTransition(labelText, callback) {
+  const el  = document.getElementById('transition');
+  const cvs = document.getElementById('transCanvas');
+  const lbl = document.getElementById('transitionLabel');
+  const tc  = cvs.getContext('2d');
+
+  transitioning = true;
+  el.style.display = 'block';
+  lbl.style.opacity = 0;
+  lbl.textContent = labelText || '';
+
+  cvs.width  = window.innerWidth;
+  cvs.height = window.innerHeight;
+  const W = cvs.width, H = cvs.height;
+
+  const TOOTH_W  = 90;   // width of each tooth at base
+  const TOOTH_H  = 110;  // height of tooth point
+  const N = Math.ceil(W / TOOTH_W) + 2;
+  const BG = '#6a0a00';
+  const TOOTH_FILL = '#8b1500';
+  const TOOTH_HL   = '#b02000';
+
+  function drawJaw(jawY, pointDown) {
+    // jawY = y position of the flat edge of the jaw
+    // pointDown = true for top jaw (teeth hang down), false for bottom jaw (teeth point up)
+    tc.fillStyle = BG;
+    if (pointDown) {
+      tc.fillRect(0, 0, W, jawY); // fill from top down to jaw edge
+    } else {
+      tc.fillRect(0, jawY, W, H - jawY); // fill from jaw edge to bottom
+    }
+
+    // draw teeth
+    for (let i = -1; i < N; i++) {
+      const tx = i * TOOTH_W;
+      const tipX = tx + TOOTH_W / 2;
+      const baseY = jawY;
+      const tipY  = pointDown ? jawY + TOOTH_H : jawY - TOOTH_H;
+
+      tc.beginPath();
+      tc.moveTo(tx, baseY);
+      tc.lineTo(tx + TOOTH_W, baseY);
+      tc.lineTo(tipX, tipY);
+      tc.closePath();
+      tc.fillStyle = TOOTH_FILL;
+      tc.fill();
+
+      // highlight on left side of tooth
+      tc.beginPath();
+      tc.moveTo(tx, baseY);
+      tc.lineTo(tipX, tipY);
+      tc.lineTo(tx + TOOTH_W * 0.35, baseY);
+      tc.closePath();
+      tc.fillStyle = TOOTH_HL;
+      tc.globalAlpha = 0.3;
+      tc.fill();
+      tc.globalAlpha = 1;
+    }
+  }
+
+  let t = 0;
+  const CLOSE_F = 28;
+  const HOLD_F  = 55;
+  const OPEN_F  = 30;
+
+  function easeOut(p) { return 1 - Math.pow(1 - p, 3); }
+  function easeIn(p)  { return p * p; }
+
+  function tick() {
+    tc.clearRect(0, 0, W, H);
+    t++;
+
+    let topJawY, botJawY;
+
+    if (t <= CLOSE_F) {
+      const p = easeOut(t / CLOSE_F);
+      topJawY = -TOOTH_H + p * (H / 2 + TOOTH_H);
+      botJawY =  H + TOOTH_H - p * (H / 2 + TOOTH_H);
+      if (t === CLOSE_F) { lbl.style.opacity = 1; callback(); }
+    } else if (t <= CLOSE_F + HOLD_F) {
+      topJawY = H / 2;
+      botJawY = H / 2;
+    } else {
+      const p = easeIn((t - CLOSE_F - HOLD_F) / OPEN_F);
+      topJawY = H / 2 - p * (H / 2 + TOOTH_H);
+      botJawY = H / 2 + p * (H / 2 + TOOTH_H);
+      lbl.style.opacity = Math.max(0, 1 - p * 2.5);
+      if (t >= CLOSE_F + HOLD_F + OPEN_F) {
+        el.style.display = 'none';
+        transitioning = false;
+        return;
+      }
+    }
+
+    const gap = botJawY - topJawY;
+    const fadeStart = TOOTH_H * 1.4;
+    const fadeEnd   = TOOTH_H * 0.2;
+    // alpha for teeth: 1 when far apart, fades to 0 as jaws close
+    const toothAlpha = Math.max(0, Math.min(1, (gap - fadeEnd) / (fadeStart - fadeEnd)));
+
+    // always draw solid jaw fills
+    tc.fillStyle = BG;
+    tc.fillRect(0, 0, W, topJawY);
+    tc.fillRect(0, botJawY, W, H - botJawY);
+    if (gap <= 0) tc.fillRect(0, 0, W, H);
+
+    // draw teeth on top with fading alpha
+    if (toothAlpha > 0) {
+      tc.globalAlpha = toothAlpha;
+      drawJaw(botJawY, false);
+      drawJaw(topJawY, true);
+      tc.globalAlpha = 1;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 // ─── save / progress ─────────────────────────────────────────────────────────
 const SAVE_KEY = 'normalPlatformerProgress';
 let maxUnlocked = 0; // highest level index unlocked (0 = level 1 available)
@@ -1781,10 +1941,15 @@ document.getElementById('pauseRestartBtn').addEventListener('click', () => {
 function startFromLevel(idx) {
   curLevel = idx; totalDeaths = 0;
   document.getElementById('deathNum').textContent = '0';
-  document.getElementById('pauseBtn').style.display = 'flex';
-  loadLevel(idx);
-  gameActive = true;
-  loop();
+  hideLevelSelect();
+  document.getElementById('startOverlay').style.display = 'none';
+  const label = 'LEVEL ' + (idx + 1);
+  doTransition(label, () => {
+    document.getElementById('pauseBtn').style.display = 'flex';
+    loadLevel(idx);
+    gameActive = true;
+    loop();
+  });
 }
 
 // patch showWin to save progress
