@@ -1719,18 +1719,18 @@ function doTransition(labelText, callback) {
   const TOOTH_HL   = '#b02000';
 
   function drawJaw(jawY, pointDown) {
-    // jawY = y position of the flat edge of the jaw
-    // pointDown = true for top jaw (teeth hang down), false for bottom jaw (teeth point up)
     tc.fillStyle = BG;
     if (pointDown) {
-      tc.fillRect(0, 0, W, jawY); // fill from top down to jaw edge
+      tc.fillRect(0, 0, W, jawY);
     } else {
-      tc.fillRect(0, jawY, W, H - jawY); // fill from jaw edge to bottom
+      tc.fillRect(0, jawY, W, H - jawY);
     }
 
-    // draw teeth
-    for (let i = -1; i < N; i++) {
-      const tx = i * TOOTH_W;
+    // offset bottom jaw by half a tooth so teeth interlock perfectly
+    const offset = pointDown ? 0 : TOOTH_W / 2;
+
+    for (let i = -1; i < N + 1; i++) {
+      const tx = i * TOOTH_W + offset;
       const tipX = tx + TOOTH_W / 2;
       const baseY = jawY;
       const tipY  = pointDown ? jawY + TOOTH_H : jawY - TOOTH_H;
@@ -1743,7 +1743,7 @@ function doTransition(labelText, callback) {
       tc.fillStyle = TOOTH_FILL;
       tc.fill();
 
-      // highlight on left side of tooth
+      // highlight
       tc.beginPath();
       tc.moveTo(tx, baseY);
       tc.lineTo(tipX, tipY);
