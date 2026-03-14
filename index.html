@@ -424,8 +424,14 @@ let transitioning = false; // true while level transition is playing // null = n
 
 // ─── input ────────────────────────────────────────────────────────────────────
 const K = {};
-document.addEventListener('keydown', e => { K[e.code] = true; });
-document.addEventListener('keyup',   e => { K[e.code] = false; });
+let jumpPressed = false;
+document.addEventListener('keydown', e => {
+  if (!K[e.code] && (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space')) {
+    jumpPressed = true;
+  }
+  K[e.code] = true;
+});
+document.addEventListener('keyup', e => { K[e.code] = false; });
 const left  = () => K['ArrowLeft']  || K['KeyA'];
 const right = () => K['ArrowRight'] || K['KeyD'];
 const jump  = () => K['ArrowUp']    || K['KeyW'] || K['Space'];
@@ -1122,12 +1128,13 @@ function update() {
   else if (goRight) p.vx = SPEED;
   else p.vx *= 0.78;
 
-  if (jump() && p.grounded) {
+  if (jumpPressed && p.grounded) {
     const onFalling = lvl.platforms && lvl.platforms.some(pl =>
       pl._falling && !pl._gone && overlaps(p.x, p.y+p.h, p.w, 2, pl.x, pl.y, pl.w, 4));
     p.vy = onFalling ? JSPD * 0.45 : JSPD;
     p.grounded = false;
   }
+  jumpPressed = false;
 
   p.vy += GRAV;
   if (Math.abs(p.vy) > 16) p.vy = Math.sign(p.vy)*16;
