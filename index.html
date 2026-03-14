@@ -314,6 +314,14 @@ body {
 }
 .ls-node.beaten .ls-node-num { color:#88ff66; }
 .ls-node.locked .ls-node-num { color:#8a6030; }
+
+/* desktop: emoji, mobile: svg */
+.btn-svg { display: none; }
+.btn-emoji { display: inline; }
+@media (pointer: coarse), (max-width: 768px) {
+  .btn-svg { display: inline; }
+  .btn-emoji { display: none; }
+}
 </style>
 </head>
 <body>
@@ -378,7 +386,8 @@ body {
 
 <!-- pause button (top-left, shown during gameplay) -->
 <button id="pauseBtn" title="Pause (ESC)">
-  <svg viewBox="0 0 20 20" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+  <span class="btn-emoji">⏸</span>
+  <svg class="btn-svg" viewBox="0 0 20 20" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
     <rect x="3" y="2" width="5" height="16" rx="1" fill="#f0c060"/>
     <rect x="12" y="2" width="5" height="16" rx="1" fill="#f0c060"/>
   </svg>
@@ -403,19 +412,16 @@ body {
 <!-- mobile touch controls -->
 <div id="mobileControls">
   <div id="btnLeft">
-  <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="18,3 6,12 18,21" fill="rgba(240,192,96,0.9)"/>
-  </svg>
+  <span class="btn-emoji">◀</span>
+  <svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="18,3 6,12 18,21" fill="rgba(240,192,96,0.9)"/></svg>
 </div>
   <div id="btnRight">
-  <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="6,3 18,12 6,21" fill="rgba(240,192,96,0.9)"/>
-  </svg>
+  <span class="btn-emoji">▶</span>
+  <svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="6,3 18,12 6,21" fill="rgba(240,192,96,0.9)"/></svg>
 </div>
   <div id="btnJump">
-  <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-    <polygon points="3,19 12,5 21,19" fill="rgba(240,192,96,0.9)"/>
-  </svg>
+  <span class="btn-emoji">▲</span>
+  <svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="3,20 12,4 21,20" fill="rgba(240,192,96,0.9)"/></svg>
 </div>
 </div>
 
@@ -472,8 +478,8 @@ function makeLevels() {
     {
       name:"1 - JUST WALK",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:600, h:40},
       ],
@@ -487,8 +493,8 @@ function makeLevels() {
     {
       name:"2 - LOW CEILING",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -505,8 +511,8 @@ function makeLevels() {
     {
       name:"3 - NORMAL FLOOR",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:230, h:40},
         {x:250, y:320, w:55,  h:40, special:'collapse', collapseTimer:-1},
@@ -519,8 +525,8 @@ function makeLevels() {
     {
       name:"4 - EASY GAP",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:210, h:40},
         {x:290, y:320, w:310, h:40},
@@ -538,8 +544,8 @@ function makeLevels() {
     {
       name:"5 - SOLID FLOOR",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -553,8 +559,8 @@ function makeLevels() {
     {
       name:"6 - ALMOST THERE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[520,230],
+      spawn:[30,296],
+      door:[520,206],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:330, y:272, w:100, h:20},
@@ -570,8 +576,8 @@ function makeLevels() {
     {
       name:"7 - OPEN ROOM",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -591,8 +597,8 @@ function makeLevels() {
     {
       name:"8 - MOVING PLATFORM",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:120, h:40},
         {x:175, y:308, w:130, h:32, special:'slideRight', vx:0, maxX:440},
@@ -608,8 +614,8 @@ function makeLevels() {
     {
       name:"9 - EASY ROOM",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:390, h:40},
         {x:450, y:320, w:150, h:40},
@@ -628,14 +634,14 @@ function makeLevels() {
     {
       name:"10 - FINISH LINE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[490,290],
+      spawn:[30,296],
+      door:[490,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
       traps:[
         { trigger:'playerX', val:400, fired:false,
-          action:'moveDoor', newX:30, newY:290, msg:"door said no" },
+          action:'moveDoor', newX:30, newY:282, msg:"door said no" },
         { trigger:'playerXBelow_afterDoor', val:250, fired:false,
           action:'removeFloorChunk', cx:85, cw:120, msg:"nice try though" },
       ],
@@ -645,8 +651,8 @@ function makeLevels() {
     {
       name:"11 - CHOOSE WISELY",
       bg:'#e8a84a',
-      spawn:[30,200],
-      door:[548,200],
+      spawn:[30,216],
+      door:[548,202],
       platforms:[
         {x:0,   y:240, w:120, h:20},
         {x:160, y:240, w:120, h:20},
@@ -663,8 +669,8 @@ function makeLevels() {
     {
       name:"12 - SOLID GROUND",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[530,258],
+      spawn:[30,296],
+      door:[530,240],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:460, y:278, w:140, h:20},
@@ -679,8 +685,8 @@ function makeLevels() {
     {
       name:"13 - FREE COINS!",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -703,8 +709,8 @@ function makeLevels() {
     {
       name:"14 - HELPFUL JUMP PAD",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -725,8 +731,8 @@ function makeLevels() {
     {
       name:"15 - WIDE OPEN",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[500,268],
+      spawn:[30,296],
+      door:[500,250],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:480, y:288, w:120, h:20},
@@ -744,12 +750,12 @@ function makeLevels() {
     {
       name:"16 - FLOATING ISLAND",
       bg:'#e8a84a',
-      spawn:[30,270],
-      door:[548,268],
+      spawn:[30,276],
+      door:[548,262],
       platforms:[
         {x:0,   y:300, w:120, h:20},
-        {x:155, y:280, w:105, h:16, special:'collapse', collapseTimer:-1},
-        {x:295, y:280, w:105, h:16, special:'collapse', collapseTimer:-1},
+        {x:155, y:280, w:105, h:16, special:'collapse', collapseTimer:-1, fallIntoLava:true},
+        {x:295, y:280, w:105, h:16, special:'collapse', collapseTimer:-1, fallIntoLava:true},
         {x:435, y:280, w:130, h:20},
         {x:0,   y:348, w:600, h:12, deadly:true, color:'#cc3344'},
       ],
@@ -760,8 +766,8 @@ function makeLevels() {
     {
       name:"17 - HALLWAY",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:0,   y:0,   w:20,  h:360, color:'#7a5010'},
@@ -781,8 +787,8 @@ function makeLevels() {
     {
       name:"18 - SO CLOSE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[498,230],
+      spawn:[30,296],
+      door:[498,220],
       platforms:[
         {x:0,   y:320, w:420, h:40},
         {x:420, y:320, w:180, h:40, special:'collapse', collapseTimer:-1},
@@ -798,8 +804,8 @@ function makeLevels() {
     {
       name:"19 - NORMAL LEVEL",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:220, h:40},
         {x:270, y:320, w:220, h:40},
@@ -815,8 +821,8 @@ function makeLevels() {
     {
       name:"20 - GRAND FINALE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,220],
+      spawn:[30,296],
+      door:[548,210],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:460, y:248, w:140, h:20},
@@ -841,8 +847,8 @@ function makeLevels() {
     {
       name:"21 - TRUST YOUR GUT",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[488,158],
+      spawn:[30,296],
+      door:[488,150],
       platforms:[
         {x:0,   y:320, w:120, h:40},
         {x:158, y:290, w:82,  h:16, invisible:true},
@@ -859,8 +865,8 @@ function makeLevels() {
     {
       name:"22 - SMOOTH SAILING",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[540,28],
+      spawn:[30,296],
+      door:[540,20],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:0,   y:0,   w:600, h:20, color:'#7a5010'},
@@ -875,8 +881,8 @@ function makeLevels() {
     {
       name:"23 - STURDY TILES",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:88,  h:40},
         {x:88,  y:320, w:62,  h:40, special:'collapse', collapseTimer:-1},
@@ -895,8 +901,8 @@ function makeLevels() {
     {
       name:"24 - SOLID FLOOR",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -914,8 +920,8 @@ function makeLevels() {
     {
       name:"25 - THE END (for real)",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,168],
+      spawn:[30,296],
+      door:[548,170],
       platforms:[
         {x:0,   y:320, w:155, h:40},
         {x:205, y:298, w:115, h:20},
@@ -1137,7 +1143,14 @@ function update() {
   else if (goRight) p.vx = SPEED;
   else p.vx *= 0.78;
 
-  if (jump() && p.grounded) { p.vy = JSPD; p.grounded = false; }
+  if (jump() && p.grounded) {
+    const onFalling = lvl.platforms && lvl.platforms.some(pl =>
+      pl._falling && !pl._gone &&
+      overlaps(p.x, p.y+p.h, p.w, 2, pl.x, pl.y, pl.w, 4)
+    );
+    p.vy = onFalling ? JSPD * 0.45 : JSPD;
+    p.grounded = false;
+  }
 
   p.vy += GRAV;
   if (Math.abs(p.vy) > 16) p.vy = Math.sign(p.vy)*16;
@@ -1150,6 +1163,18 @@ function update() {
   for (let i = 0; i < lvl.platforms.length; i++) {
     const pl = lvl.platforms[i];
     if (pl._gone) continue;
+    if (pl._falling) {
+      if (overlaps(p.x,p.y,p.w,p.h, pl.x,pl.y,pl.w,pl.h)) {
+        const overY = Math.min(p.y+p.h,pl.y+pl.h) - Math.max(p.y,pl.y);
+        const overX = Math.min(p.x+p.w,pl.x+pl.w) - Math.max(p.x,pl.x);
+        if (overX >= overY && p.vy >= 0 && p.y+p.h <= pl.y+pl.h+4) {
+          p.y = pl.y - p.h;
+          p.vy = pl._fallVy;
+          p.grounded = true;
+        }
+      }
+      continue;
+    }
     if (pl.invisible && flashRevealTimer <= 0) continue;
 
     // slide platform
@@ -1180,7 +1205,7 @@ function update() {
         if (p.vy >= 0 && p.y+p.h <= pl.y+pl.h+4) {
           p.y = pl.y - p.h; p.vy = 0; p.grounded = true;
           if (pl.special === 'collapse') {
-            if (pl.collapseTimer < 0) pl.collapseTimer = 38;
+            if (pl.collapseTimer < 0) pl.collapseTimer = pl.fallIntoLava ? 6 : 38;
           }
           lvl.traps && lvl.traps.forEach(t => {
             if (!t.fired && t.trigger === 'playerStandOn' && t.platIdx === i) fireTrap(t);
@@ -1199,7 +1224,26 @@ function update() {
   lvl.platforms.forEach(pl => {
     if (pl.special === 'collapse' && pl.collapseTimer > 0) {
       pl.collapseTimer--;
-      if (pl.collapseTimer === 0) pl._gone = true;
+      if (pl.collapseTimer === 0) {
+        if (pl.fallIntoLava) {
+          pl._falling = true;
+          pl._fallVy = 0;
+        } else {
+          pl._gone = true;
+        }
+      }
+    }
+    if (pl._falling && !pl._gone) {
+      pl._fallVy = (pl._fallVy || 0) + 0.55;
+      pl.y += pl._fallVy;
+      const lava = lvl.platforms.find(l => l.deadly);
+      const lavaY = lava ? lava.y : 400;
+      if (pl.y + pl.h >= lavaY) {
+        pl._gone = true;
+        if (overlaps(p.x, p.y, p.w, p.h, pl.x, pl.y - 20, pl.w, pl.h + 20)) {
+          die("into the lava");
+        }
+      }
     }
   });
 
@@ -1429,6 +1473,11 @@ function drawPlatform(pl) {
       ctx.save();
       ctx.translate((Math.random()-.5)*3, 0);
     }
+    if (pl._falling) {
+      col = '#aa3300';
+      ctx.save();
+      ctx.translate((Math.random()-.5)*2, 0);
+    }
   }
   if (pl.slippery) col = PLAT_COLORS.slippery;
   if (pl.deadly && !pl.color) col = '#cc3344';
@@ -1445,7 +1494,7 @@ function drawPlatform(pl) {
   ctx.fillStyle = 'rgba(255,255,255,0.1)';
   ctx.fillRect(Math.round(pl.x), Math.round(pl.y), pl.w, 3);
   ctx.globalAlpha = 1;
-  if (pl.special === 'collapse' && pl.collapseTimer > 0) ctx.restore();
+  if (pl.special === 'collapse' && (pl.collapseTimer > 0 || pl._falling)) ctx.restore();
 }
 
 function drawSpikeTri(x, y, w, h, color, pointUp) {
