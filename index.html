@@ -315,13 +315,7 @@ body {
 .ls-node.beaten .ls-node-num { color:#88ff66; }
 .ls-node.locked .ls-node-num { color:#8a6030; }
 
-/* desktop: emoji, mobile: svg */
-.btn-svg { display: none; }
-.btn-emoji { display: inline; }
-@media (pointer: coarse), (max-width: 768px) {
-  .btn-svg { display: inline; }
-  .btn-emoji { display: none; }
-}
+.btn-svg{display:none}.btn-emoji{display:inline}@media(pointer:coarse),(max-width:768px){.btn-svg{display:inline}.btn-emoji{display:none}}
 </style>
 </head>
 <body>
@@ -385,13 +379,7 @@ body {
 </div>
 
 <!-- pause button (top-left, shown during gameplay) -->
-<button id="pauseBtn" title="Pause (ESC)">
-  <span class="btn-emoji">⏸</span>
-  <svg class="btn-svg" viewBox="0 0 20 20" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="2" width="5" height="16" rx="1" fill="#f0c060"/>
-    <rect x="12" y="2" width="5" height="16" rx="1" fill="#f0c060"/>
-  </svg>
-</button>
+<button id="pauseBtn" title="Pause (ESC)"><span class="btn-emoji">⏸</span><svg class="btn-svg" viewBox="0 0 20 20" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="2" width="5" height="16" rx="1" fill="#f0c060"/><rect x="12" y="2" width="5" height="16" rx="1" fill="#f0c060"/></svg></button>
 
 <!-- pause menu -->
 <div id="pauseOverlay">
@@ -411,18 +399,9 @@ body {
 
 <!-- mobile touch controls -->
 <div id="mobileControls">
-  <div id="btnLeft">
-  <span class="btn-emoji">◀</span>
-  <svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="18,3 6,12 18,21" fill="rgba(240,192,96,0.9)"/></svg>
-</div>
-  <div id="btnRight">
-  <span class="btn-emoji">▶</span>
-  <svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="6,3 18,12 6,21" fill="rgba(240,192,96,0.9)"/></svg>
-</div>
-  <div id="btnJump">
-  <span class="btn-emoji">▲</span>
-  <svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="3,20 12,4 21,20" fill="rgba(240,192,96,0.9)"/></svg>
-</div>
+  <div id="btnLeft"><span class="btn-emoji">◀</span><svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="18,3 6,12 18,21" fill="rgba(240,192,96,0.9)"/></svg></div>
+  <div id="btnRight"><span class="btn-emoji">▶</span><svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="6,3 18,12 6,21" fill="rgba(240,192,96,0.9)"/></svg></div>
+  <div id="btnJump"><span class="btn-emoji">▲</span><svg class="btn-svg" viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg"><polygon points="3,20 12,4 21,20" fill="rgba(240,192,96,0.9)"/></svg></div>
 </div>
 
 <script>
@@ -751,7 +730,7 @@ function makeLevels() {
       name:"16 - FLOATING ISLAND",
       bg:'#e8a84a',
       spawn:[30,276],
-      door:[548,262],
+      door:[510,242],
       platforms:[
         {x:0,   y:300, w:120, h:20},
         {x:155, y:280, w:105, h:16, special:'collapse', collapseTimer:-1, fallIntoLava:true},
@@ -1145,9 +1124,7 @@ function update() {
 
   if (jump() && p.grounded) {
     const onFalling = lvl.platforms && lvl.platforms.some(pl =>
-      pl._falling && !pl._gone &&
-      overlaps(p.x, p.y+p.h, p.w, 2, pl.x, pl.y, pl.w, 4)
-    );
+      pl._falling && !pl._gone && overlaps(p.x, p.y+p.h, p.w, 2, pl.x, pl.y, pl.w, 4));
     p.vy = onFalling ? JSPD * 0.45 : JSPD;
     p.grounded = false;
   }
@@ -1168,9 +1145,7 @@ function update() {
         const overY = Math.min(p.y+p.h,pl.y+pl.h) - Math.max(p.y,pl.y);
         const overX = Math.min(p.x+p.w,pl.x+pl.w) - Math.max(p.x,pl.x);
         if (overX >= overY && p.vy >= 0 && p.y+p.h <= pl.y+pl.h+4) {
-          p.y = pl.y - p.h;
-          p.vy = pl._fallVy;
-          p.grounded = true;
+          p.y = pl.y - p.h; p.vy = pl._fallVy; p.grounded = true;
         }
       }
       continue;
@@ -1225,12 +1200,8 @@ function update() {
     if (pl.special === 'collapse' && pl.collapseTimer > 0) {
       pl.collapseTimer--;
       if (pl.collapseTimer === 0) {
-        if (pl.fallIntoLava) {
-          pl._falling = true;
-          pl._fallVy = 0;
-        } else {
-          pl._gone = true;
-        }
+        if (pl.fallIntoLava) { pl._falling = true; pl._fallVy = 0; }
+        else { pl._gone = true; }
       }
     }
     if (pl._falling && !pl._gone) {
@@ -1240,9 +1211,7 @@ function update() {
       const lavaY = lava ? lava.y : 400;
       if (pl.y + pl.h >= lavaY) {
         pl._gone = true;
-        if (overlaps(p.x, p.y, p.w, p.h, pl.x, pl.y - 20, pl.w, pl.h + 20)) {
-          die("into the lava");
-        }
+        if (overlaps(p.x, p.y, p.w, p.h, pl.x, pl.y - 20, pl.w, pl.h + 20)) die("into the lava");
       }
     }
   });
@@ -1469,15 +1438,8 @@ function drawPlatform(pl) {
 
   if (pl.special === 'collapse') {
     col = PLAT_COLORS.collapse;
-    if (pl.collapseTimer > 0) {
-      ctx.save();
-      ctx.translate((Math.random()-.5)*3, 0);
-    }
-    if (pl._falling) {
-      col = '#aa3300';
-      ctx.save();
-      ctx.translate((Math.random()-.5)*2, 0);
-    }
+    if (pl.collapseTimer > 0) { ctx.save(); ctx.translate((Math.random()-.5)*3, 0); }
+    if (pl._falling) { col = '#aa3300'; ctx.save(); ctx.translate((Math.random()-.5)*2, 0); }
   }
   if (pl.slippery) col = PLAT_COLORS.slippery;
   if (pl.deadly && !pl.color) col = '#cc3344';
