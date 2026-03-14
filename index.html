@@ -316,6 +316,32 @@ body {
 .ls-node.locked .ls-node-num { color:#8a6030; }
 
 .btn-svg{display:none}.btn-emoji{display:inline}@media(pointer:coarse),(max-width:768px){.btn-svg{display:inline}.btn-emoji{display:none}}
+
+#lsSpeedrunBtn {
+  font-size:7px; padding:8px 12px;
+  background:rgba(20,120,20,0.85); color:#ccffcc;
+  border:3px solid #005500;
+  box-shadow:3px 3px 0 #003300;
+  font-family:'Press Start 2P', monospace;
+  cursor:pointer;
+}
+#lsSpeedrunBtn:hover { background:rgba(30,160,30,0.95); }
+#lsBestTime {
+  font-family:'Press Start 2P', monospace;
+  font-size:7px; color:#88ff66;
+  text-shadow:1px 1px 0 #003300;
+  text-align:center; margin-top:4px;
+}
+#speedrunTimer {
+  display:none; position:fixed;
+  top:10px; left:50%; transform:translateX(-50%);
+  background:#000; border:3px solid #ffcc00;
+  padding:4px 12px;
+  font-family:'Press Start 2P', monospace;
+  font-size:14px; color:#ffcc00; z-index:8;
+  letter-spacing:2px; text-shadow:0 0 8px #ff9900;
+  pointer-events:none;
+}
 </style>
 </head>
 <body>
@@ -347,6 +373,10 @@ body {
   <div id="lsHeader">
     <button id="lsBackBtn">← BACK</button>
     <div id="lsTitle">SELECT LEVEL</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <button id="lsSpeedrunBtn">⚡ SPEEDRUN</button>
+      <div id="lsBestTime"></div>
+    </div>
     <button id="lsResetBtn">🗑 RESET</button>
   </div>
 
@@ -380,6 +410,7 @@ body {
 
 <!-- pause button (top-left, shown during gameplay) -->
 <button id="pauseBtn" title="Pause (ESC)"><span class="btn-emoji">⏸</span><svg class="btn-svg" viewBox="0 0 20 20" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="2" width="5" height="16" rx="1" fill="#f0c060"/><rect x="12" y="2" width="5" height="16" rx="1" fill="#f0c060"/></svg></button>
+<div id="speedrunTimer">0:00.00</div>
 
 <!-- pause menu -->
 <div id="pauseOverlay">
@@ -1851,21 +1882,63 @@ function doTransition(labelText, callback) {
 
 // ─── save / progress ─────────────────────────────────────────────────────────
 const SAVE_KEY = 'normalPlatformerProgress';
-let maxUnlocked = 0; // highest level index unlocked (0 = level 1 available)
+let maxUnlocked = 0;
+let speedrunActive = false;
+let speedrunStartTime = 0;
+let speedrunInterval = null;
+let bestSpeedrunTime = null;
 
 function saveProgress() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify({maxUnlocked})); } catch(e){}
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({maxUnlocked, bestSpeedrunTime})); } catch(e){}
 }
 function loadProgress() {
   try {
     const d = JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');
     maxUnlocked = d.maxUnlocked || 0;
-  } catch(e){ maxUnlocked = 0; }
+    bestSpeedrunTime = d.bestSpeedrunTime || null;
+  } catch(e){ maxUnlocked = 0; bestSpeedrunTime = null; }
 }
 function markLevelBeaten(idx) {
   if (idx >= maxUnlocked) { maxUnlocked = idx + 1; saveProgress(); }
 }
 loadProgress();
+
+// ─── speedrun helpers ────────────────────────────────────────────────────────
+function formatTime(ms) {
+  const min = Math.floor(ms/60000);
+  const sec = Math.floor((ms%60000)/1000);
+  const cs  = Math.floor((ms%1000)/10);
+  return min+':'+String(sec).padStart(2,'0')+'.'+String(cs).padStart(2,'0');
+}
+function startSpeedrun() {
+  speedrunActive = true;
+  speedrunStartTime = performance.now();
+  const el = document.getElementById('speedrunTimer');
+  el.style.display = 'block'; el.textContent = '0:00.00';
+  clearInterval(speedrunInterval);
+  speedrunInterval = setInterval(() => {
+    if (speedrunActive) el.textContent = formatTime(performance.now() - speedrunStartTime);
+  }, 50);
+}
+function stopSpeedrun() {
+  speedrunActive = false;
+  clearInterval(speedrunInterval);
+  document.getElementById('speedrunTimer').style.display = 'none';
+}
+function finishSpeedrun() {
+  const elapsed = performance.now() - speedrunStartTime;
+  speedrunActive = false;
+  clearInterval(speedrunInterval);
+  document.getElementById('speedrunTimer').style.display = 'none';
+  if (bestSpeedrunTime === null || elapsed < bestSpeedrunTime) {
+    bestSpeedrunTime = elapsed; saveProgress();
+  }
+}
+function updateBestTimeDisplay() {
+  const el = document.getElementById('lsBestTime');
+  if (!el) return;
+  el.textContent = bestSpeedrunTime !== null ? 'BEST: '+formatTime(bestSpeedrunTime) : '';
+}
 
 // ─── level select — winding path style ───────────────────────────────────────
 function doorSVG(beaten, locked) {
@@ -1881,6 +1954,7 @@ function doorSVG(beaten, locked) {
 }
 
 function buildLevelSelect() {
+  updateBestTimeDisplay();
   const defs = makeLevels();
   const path = document.getElementById('lsPath');
   const cvs  = document.getElementById('lsPathCanvas');
@@ -1978,7 +2052,19 @@ document.getElementById('lsResetConfirmYes').addEventListener('click', () => {
   maxUnlocked = 0;
   saveProgress();
   document.getElementById('lsResetConfirm').style.display = 'none';
-  buildLevelSelect(); // rebuild to show all locked
+  buildLevelSelect();
+});
+
+document.getElementById('lsSpeedrunBtn').addEventListener('click', () => {
+  hideLevelSelect();
+  document.getElementById('startOverlay').style.display = 'none';
+  startSpeedrun();
+  curLevel = 0; totalDeaths = 0;
+  document.getElementById('deathNum').textContent = '0';
+  doTransition('LEVEL 1', () => {
+    document.getElementById('pauseBtn').style.display = 'flex';
+    loadLevel(0); gameActive = true; loop();
+  });
 });
 
 function hideLevelSelect() {
@@ -2003,6 +2089,7 @@ document.getElementById('pauseResumeBtn').addEventListener('click', () => setPau
 document.getElementById('pauseLevelsBtn').addEventListener('click', () => {
   setPaused(false);
   gameActive = false;
+  stopSpeedrun();
   document.getElementById('pauseBtn').style.display = 'none';
   showLevelSelect();
 });
@@ -2029,6 +2116,7 @@ function startFromLevel(idx) {
 const _origShowWin = showWin;
 window.showWin = function() {
   markLevelBeaten(curLevel - 1);
+  if (speedrunActive) finishSpeedrun();
   _origShowWin();
 };
 
@@ -2162,7 +2250,6 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   }
   bindBtn('btnLeft',  'ArrowLeft');
   bindBtn('btnRight', 'ArrowRight');
-  // jump fires once per tap, no hold
   const jumpBtn = document.getElementById('btnJump');
   if (jumpBtn) {
     jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); jumpPressed = true; }, {passive:false});
