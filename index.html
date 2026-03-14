@@ -2162,7 +2162,12 @@ document.getElementById('restartBtn').addEventListener('click', () => {
   }
   bindBtn('btnLeft',  'ArrowLeft');
   bindBtn('btnRight', 'ArrowRight');
-  bindBtn('btnJump',  'Space');
+  // jump fires once per tap, no hold
+  const jumpBtn = document.getElementById('btnJump');
+  if (jumpBtn) {
+    jumpBtn.addEventListener('touchstart', e => { e.preventDefault(); jumpPressed = true; }, {passive:false});
+    jumpBtn.addEventListener('touchend',   e => { e.preventDefault(); }, {passive:false});
+  }
 
   // Scale canvas to fit mobile screen while keeping aspect ratio
   function scaleCanvas() {
