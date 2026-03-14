@@ -377,7 +377,12 @@ body {
 </div>
 
 <!-- pause button (top-left, shown during gameplay) -->
-<button id="pauseBtn" title="Pause (ESC)">⏸</button>
+<button id="pauseBtn" title="Pause (ESC)">
+  <svg viewBox="0 0 20 20" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="2" width="5" height="16" rx="1" fill="#f0c060"/>
+    <rect x="12" y="2" width="5" height="16" rx="1" fill="#f0c060"/>
+  </svg>
+</button>
 
 <!-- pause menu -->
 <div id="pauseOverlay">
@@ -397,9 +402,21 @@ body {
 
 <!-- mobile touch controls -->
 <div id="mobileControls">
-  <div id="btnLeft">◀</div>
-  <div id="btnRight">▶</div>
-  <div id="btnJump">▲</div>
+  <div id="btnLeft">
+  <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="18,3 6,12 18,21" fill="rgba(240,192,96,0.9)"/>
+  </svg>
+</div>
+  <div id="btnRight">
+  <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="6,3 18,12 6,21" fill="rgba(240,192,96,0.9)"/>
+  </svg>
+</div>
+  <div id="btnJump">
+  <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="3,19 12,5 21,19" fill="rgba(240,192,96,0.9)"/>
+  </svg>
+</div>
 </div>
 
 <script>
@@ -455,8 +472,8 @@ function makeLevels() {
     {
       name:"1 - JUST WALK",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:600, h:40},
       ],
@@ -470,8 +487,8 @@ function makeLevels() {
     {
       name:"2 - LOW CEILING",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -488,8 +505,8 @@ function makeLevels() {
     {
       name:"3 - NORMAL FLOOR",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:230, h:40},
         {x:250, y:320, w:55,  h:40, special:'collapse', collapseTimer:-1},
@@ -502,8 +519,8 @@ function makeLevels() {
     {
       name:"4 - EASY GAP",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:210, h:40},
         {x:290, y:320, w:310, h:40},
@@ -521,8 +538,8 @@ function makeLevels() {
     {
       name:"5 - SOLID FLOOR",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -536,8 +553,8 @@ function makeLevels() {
     {
       name:"6 - ALMOST THERE",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[520,206],
+      spawn:[30,290],
+      door:[520,230],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:330, y:272, w:100, h:20},
@@ -553,8 +570,8 @@ function makeLevels() {
     {
       name:"7 - OPEN ROOM",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -574,8 +591,8 @@ function makeLevels() {
     {
       name:"8 - MOVING PLATFORM",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:120, h:40},
         {x:175, y:308, w:130, h:32, special:'slideRight', vx:0, maxX:440},
@@ -591,8 +608,8 @@ function makeLevels() {
     {
       name:"9 - EASY ROOM",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:390, h:40},
         {x:450, y:320, w:150, h:40},
@@ -611,14 +628,14 @@ function makeLevels() {
     {
       name:"10 - FINISH LINE",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[490,282],
+      spawn:[30,290],
+      door:[490,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
       traps:[
         { trigger:'playerX', val:400, fired:false,
-          action:'moveDoor', newX:30, newY:282, msg:"door said no" },
+          action:'moveDoor', newX:30, newY:290, msg:"door said no" },
         { trigger:'playerXBelow_afterDoor', val:250, fired:false,
           action:'removeFloorChunk', cx:85, cw:120, msg:"nice try though" },
       ],
@@ -628,8 +645,8 @@ function makeLevels() {
     {
       name:"11 - CHOOSE WISELY",
       bg:'#e8a84a',
-      spawn:[30,216],
-      door:[548,202],
+      spawn:[30,200],
+      door:[548,200],
       platforms:[
         {x:0,   y:240, w:120, h:20},
         {x:160, y:240, w:120, h:20},
@@ -646,8 +663,8 @@ function makeLevels() {
     {
       name:"12 - SOLID GROUND",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[530,240],
+      spawn:[30,290],
+      door:[530,258],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:460, y:278, w:140, h:20},
@@ -662,8 +679,8 @@ function makeLevels() {
     {
       name:"13 - FREE COINS!",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -686,8 +703,8 @@ function makeLevels() {
     {
       name:"14 - HELPFUL JUMP PAD",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -708,8 +725,8 @@ function makeLevels() {
     {
       name:"15 - WIDE OPEN",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[500,250],
+      spawn:[30,290],
+      door:[500,268],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:480, y:288, w:120, h:20},
@@ -727,8 +744,8 @@ function makeLevels() {
     {
       name:"16 - FLOATING ISLAND",
       bg:'#e8a84a',
-      spawn:[30,262],
-      door:[548,262],
+      spawn:[30,270],
+      door:[548,268],
       platforms:[
         {x:0,   y:300, w:120, h:20},
         {x:155, y:280, w:105, h:16, special:'collapse', collapseTimer:-1},
@@ -743,8 +760,8 @@ function makeLevels() {
     {
       name:"17 - HALLWAY",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:0,   y:0,   w:20,  h:360, color:'#7a5010'},
@@ -764,8 +781,8 @@ function makeLevels() {
     {
       name:"18 - SO CLOSE",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[498,220],
+      spawn:[30,290],
+      door:[498,230],
       platforms:[
         {x:0,   y:320, w:420, h:40},
         {x:420, y:320, w:180, h:40, special:'collapse', collapseTimer:-1},
@@ -781,8 +798,8 @@ function makeLevels() {
     {
       name:"19 - NORMAL LEVEL",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:220, h:40},
         {x:270, y:320, w:220, h:40},
@@ -798,8 +815,8 @@ function makeLevels() {
     {
       name:"20 - GRAND FINALE",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,210],
+      spawn:[30,290],
+      door:[548,220],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:460, y:248, w:140, h:20},
@@ -824,8 +841,8 @@ function makeLevels() {
     {
       name:"21 - TRUST YOUR GUT",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[488,150],
+      spawn:[30,290],
+      door:[488,158],
       platforms:[
         {x:0,   y:320, w:120, h:40},
         {x:158, y:290, w:82,  h:16, invisible:true},
@@ -842,8 +859,8 @@ function makeLevels() {
     {
       name:"22 - SMOOTH SAILING",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[540,20],
+      spawn:[30,290],
+      door:[540,28],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:0,   y:0,   w:600, h:20, color:'#7a5010'},
@@ -858,8 +875,8 @@ function makeLevels() {
     {
       name:"23 - STURDY TILES",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0,   y:320, w:88,  h:40},
         {x:88,  y:320, w:62,  h:40, special:'collapse', collapseTimer:-1},
@@ -878,8 +895,8 @@ function makeLevels() {
     {
       name:"24 - SOLID FLOOR",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,282],
+      spawn:[30,290],
+      door:[548,290],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -897,8 +914,8 @@ function makeLevels() {
     {
       name:"25 - THE END (for real)",
       bg:'#e8a84a',
-      spawn:[30,296],
-      door:[548,170],
+      spawn:[30,290],
+      door:[548,168],
       platforms:[
         {x:0,   y:320, w:155, h:40},
         {x:205, y:298, w:115, h:20},
