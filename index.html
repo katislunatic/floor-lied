@@ -1075,22 +1075,48 @@ function update() {
   // if door animation is running, only advance it (no movement/death)
   if (doorAnim) {
     doorAnim.timer++;
+
     if (doorAnim.phase === 'opening') {
-      // door swings open over 18 frames, player stays put
+      // Door swings fully open over 24 frames — player stands still
       p.vx = 0; p.vy = 0;
-      if (doorAnim.timer >= 18) {
-        // snap player into door centre, start entering
-        p.x = doorAnim.x + (26 - p.w) / 2;
-        p.y = doorAnim.y + (38 - p.h) / 2;
-        doorAnim.phase = 'entering'; doorAnim.timer = 0;
+      if (doorAnim.timer >= 24) {
+        // Door is now fully open — hold it open, start walking player in
+        doorAnim.phase = 'walking';
+        doorAnim.timer = 0;
+        doorAnim.targetX = doorAnim.x + (26 - p.w) / 2;
+        doorAnim.targetY = doorAnim.y + (38 - p.h);
       }
+
+    } else if (doorAnim.phase === 'walking') {
+      // Player walks toward the door automatically
+      p.vy = 0;
+      const ddx = doorAnim.targetX - p.x;
+      // Walk at a natural pace
+      const walkSpeed = 2.0;
+      if (Math.abs(ddx) > 1) {
+        p.x += Math.sign(ddx) * Math.min(Math.abs(ddx), walkSpeed);
+      } else {
+        p.x = doorAnim.targetX;
+      }
+      // Once player is lined up, start shrinking them into the door
+      if (Math.abs(ddx) <= 1 && doorAnim.timer >= 8) {
+        doorAnim.phase = 'entering';
+        doorAnim.timer = 0;
+      }
+
     } else if (doorAnim.phase === 'entering') {
-      // player is inside door for 18 frames
-      if (doorAnim.timer >= 18) {
-        doorAnim.phase = 'closing'; doorAnim.timer = 0;
-      }
-    } else if (doorAnim.phase === 'closing') {
+      // Player shrinks/fades as they step through the doorway
+      // Door stays fully open during this phase
+      // After a short pause, door closes
       if (doorAnim.timer >= 22) {
+        doorAnim.phase = 'closing';
+        doorAnim.timer = 0;
+      }
+
+    } else if (doorAnim.phase === 'closing') {
+      // Door swings shut behind the player
+      p.vx = 0; p.vy = 0;
+      if (doorAnim.timer >= 28) {
         doorAnim = null;
         markLevelBeaten(curLevel);
         curLevel++;
@@ -1456,70 +1482,67 @@ function drawDoor(x, y) {
   const isAnimating = doorAnim && doorAnim.x === x && doorAnim.y === y;
 
   // How open is the door? 0=fully closed, 1=fully open
-  let openAmt = 1.0; // default: open
+  let openAmt = 0; // default: closed
   if (isAnimating) {
     if (doorAnim.phase === 'opening') {
-      openAmt = doorAnim.timer / 18; // swings open
+      // ease open
+      const t = doorAnim.timer / 24;
+      openAmt = 1 - Math.pow(1 - t, 2); // ease out
+    } else if (doorAnim.phase === 'walking' || doorAnim.phase === 'entering') {
+      openAmt = 1.0; // fully open while player walks in
     } else if (doorAnim.phase === 'closing') {
-      openAmt = 1.0 - (doorAnim.timer / 22); // swings shut
+      // ease closed
+      const t = doorAnim.timer / 28;
+      openAmt = 1 - (t * t); // ease in
     }
-    // 'entering' phase: stays fully open
   }
 
-  // ── draw frame/surround ──
+  // ── door frame ──
   ctx.fillStyle = '#cc9944';
   ctx.fillRect(x, y, DW, DH);
   ctx.fillStyle = '#ffcc66';
   ctx.fillRect(x, y, DW, 4); // top trim
 
-  // ── dark interior behind door ──
-  ctx.fillStyle = '#221100';
+  // ── dark interior ──
+  ctx.fillStyle = '#110800';
   ctx.fillRect(x+3, y+4, DW-6, DH-4);
 
-  // ── door panel (perspective swing: hinge on RIGHT, opens to the LEFT) ──
-  // When open, panel is very thin on the right. When closed, fills full interior.
-  // We simulate perspective by drawing a trapezoid-like shape using canvas transforms.
+  // ── door panel (hinge on right, swings left) ──
   const innerW = DW - 6;
-  const panelW = Math.round(innerW * (1 - openAmt)); // 0 when open, full when closed
+  const panelW = Math.round(innerW * (1 - openAmt));
 
   if (panelW > 0) {
-    // Back face of door (slightly darker, visible when swinging)
-    ctx.fillStyle = '#3a1a00';
+    ctx.fillStyle = '#5a2a00';
     ctx.fillRect(x+3, y+4, panelW, DH-4);
-    // Front face highlight strip on leading edge
-    ctx.fillStyle = '#885522';
+    // highlight on leading edge
+    ctx.fillStyle = '#996633';
     ctx.fillRect(x+3, y+4, Math.min(3, panelW), DH-4);
-    // Wood grain lines
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    for (let gi = 1; gi < 3 && gi*4 < panelW; gi++) {
-      ctx.fillRect(x+3+gi*4, y+6, 1, DH-8);
+    // wood grain
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    for (let gi = 1; gi < 4 && gi*5 < panelW; gi++) {
+      ctx.fillRect(x+3+gi*5, y+6, 1, DH-8);
     }
-  }
-
-  // knob on the LEFT edge of panel (moves as door swings)
-  if (panelW > 4) {
+    // knob moves with panel
     ctx.fillStyle = '#ffcc00';
     ctx.beginPath();
     ctx.arc(x+3+Math.min(panelW-4, innerW-4), y+22, 3, 0, Math.PI*2);
     ctx.fill();
-  } else if (openAmt > 0.85) {
-    // knob visible on right side of frame when door is open
+  } else {
+    // door fully open — knob on far right of frame
     ctx.fillStyle = '#ffcc00';
     ctx.beginPath();
-    ctx.arc(x+DW-6, y+22, 3, 0, Math.PI*2);
+    ctx.arc(x+DW-5, y+22, 3, 0, Math.PI*2);
     ctx.fill();
   }
 
-  // ── player silhouette inside door during 'entering' phase ──
+  // ── player silhouette fading in when entering ──
   if (isAnimating && doorAnim.phase === 'entering') {
-    const alpha = Math.min(0.85, doorAnim.timer / 8);
+    const alpha = Math.min(0.9, doorAnim.timer / 10);
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#110800';
-    // body
-    ctx.fillRect(x+7, y+12, 10, 18);
-    // head
+    ctx.fillStyle = '#080400';
+    ctx.fillRect(x+6, y+10, 12, 20); // body
     ctx.beginPath();
-    ctx.arc(x+12, y+10, 5, 0, Math.PI*2);
+    ctx.arc(x+12, y+8, 5, 0, Math.PI*2); // head
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -1534,6 +1557,12 @@ function drawPlayer() {
     p.deadTimer--;
     return;
   }
+
+  // Fade player out when entering the door
+  if (doorAnim && doorAnim.phase === 'entering') {
+    ctx.globalAlpha = Math.max(0, 1 - (doorAnim.timer / 14));
+  }
+
   const px = Math.round(p.x), py = Math.round(p.y);
   ctx.fillStyle = '#e8d5b0';
   ctx.fillRect(px, py, p.w, p.h);
@@ -1545,6 +1574,8 @@ function drawPlayer() {
   ctx.fillStyle = '#4466aa';
   ctx.fillRect(px+2,   py+p.h, 6, 4+lp);
   ctx.fillRect(px+p.w-8, py+p.h, 6, 4-lp);
+
+  ctx.globalAlpha = 1;
 }
 
 function render() {
