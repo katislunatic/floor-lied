@@ -455,8 +455,8 @@ function makeLevels() {
     {
       name:"1 - JUST WALK",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:600, h:40},
       ],
@@ -470,8 +470,8 @@ function makeLevels() {
     {
       name:"2 - LOW CEILING",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -488,8 +488,8 @@ function makeLevels() {
     {
       name:"3 - NORMAL FLOOR",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:230, h:40},
         {x:250, y:320, w:55,  h:40, special:'collapse', collapseTimer:-1},
@@ -502,8 +502,8 @@ function makeLevels() {
     {
       name:"4 - EASY GAP",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:210, h:40},
         {x:290, y:320, w:310, h:40},
@@ -521,8 +521,8 @@ function makeLevels() {
     {
       name:"5 - SOLID FLOOR",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -536,8 +536,8 @@ function makeLevels() {
     {
       name:"6 - ALMOST THERE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[520,230],
+      spawn:[30,296],
+      door:[520,206],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:330, y:272, w:100, h:20},
@@ -553,8 +553,8 @@ function makeLevels() {
     {
       name:"7 - OPEN ROOM",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -574,8 +574,8 @@ function makeLevels() {
     {
       name:"8 - MOVING PLATFORM",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:120, h:40},
         {x:175, y:308, w:130, h:32, special:'slideRight', vx:0, maxX:440},
@@ -591,8 +591,8 @@ function makeLevels() {
     {
       name:"9 - EASY ROOM",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:390, h:40},
         {x:450, y:320, w:150, h:40},
@@ -611,14 +611,14 @@ function makeLevels() {
     {
       name:"10 - FINISH LINE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[490,290],
+      spawn:[30,296],
+      door:[490,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
       traps:[
         { trigger:'playerX', val:400, fired:false,
-          action:'moveDoor', newX:30, newY:290, msg:"door said no" },
+          action:'moveDoor', newX:30, newY:282, msg:"door said no" },
         { trigger:'playerXBelow_afterDoor', val:250, fired:false,
           action:'removeFloorChunk', cx:85, cw:120, msg:"nice try though" },
       ],
@@ -628,8 +628,8 @@ function makeLevels() {
     {
       name:"11 - CHOOSE WISELY",
       bg:'#e8a84a',
-      spawn:[30,200],
-      door:[548,200],
+      spawn:[30,216],
+      door:[548,202],
       platforms:[
         {x:0,   y:240, w:120, h:20},
         {x:160, y:240, w:120, h:20},
@@ -646,8 +646,8 @@ function makeLevels() {
     {
       name:"12 - SOLID GROUND",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[530,258],
+      spawn:[30,296],
+      door:[530,240],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:460, y:278, w:140, h:20},
@@ -662,8 +662,8 @@ function makeLevels() {
     {
       name:"13 - FREE COINS!",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -686,8 +686,8 @@ function makeLevels() {
     {
       name:"14 - HELPFUL JUMP PAD",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -708,8 +708,8 @@ function makeLevels() {
     {
       name:"15 - WIDE OPEN",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[500,268],
+      spawn:[30,296],
+      door:[500,250],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:480, y:288, w:120, h:20},
@@ -727,8 +727,8 @@ function makeLevels() {
     {
       name:"16 - FLOATING ISLAND",
       bg:'#e8a84a',
-      spawn:[30,270],
-      door:[548,268],
+      spawn:[30,262],
+      door:[548,262],
       platforms:[
         {x:0,   y:300, w:120, h:20},
         {x:155, y:280, w:105, h:16, special:'collapse', collapseTimer:-1},
@@ -743,8 +743,8 @@ function makeLevels() {
     {
       name:"17 - HALLWAY",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:0,   y:0,   w:20,  h:360, color:'#7a5010'},
@@ -764,8 +764,8 @@ function makeLevels() {
     {
       name:"18 - SO CLOSE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[498,230],
+      spawn:[30,296],
+      door:[498,220],
       platforms:[
         {x:0,   y:320, w:420, h:40},
         {x:420, y:320, w:180, h:40, special:'collapse', collapseTimer:-1},
@@ -781,8 +781,8 @@ function makeLevels() {
     {
       name:"19 - NORMAL LEVEL",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:220, h:40},
         {x:270, y:320, w:220, h:40},
@@ -798,8 +798,8 @@ function makeLevels() {
     {
       name:"20 - GRAND FINALE",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,220],
+      spawn:[30,296],
+      door:[548,210],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:460, y:248, w:140, h:20},
@@ -824,8 +824,8 @@ function makeLevels() {
     {
       name:"21 - TRUST YOUR GUT",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[488,158],
+      spawn:[30,296],
+      door:[488,150],
       platforms:[
         {x:0,   y:320, w:120, h:40},
         {x:158, y:290, w:82,  h:16, invisible:true},
@@ -842,8 +842,8 @@ function makeLevels() {
     {
       name:"22 - SMOOTH SAILING",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[540,28],
+      spawn:[30,296],
+      door:[540,20],
       platforms:[
         {x:0,   y:320, w:600, h:40},
         {x:0,   y:0,   w:600, h:20, color:'#7a5010'},
@@ -858,8 +858,8 @@ function makeLevels() {
     {
       name:"23 - STURDY TILES",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0,   y:320, w:88,  h:40},
         {x:88,  y:320, w:62,  h:40, special:'collapse', collapseTimer:-1},
@@ -878,8 +878,8 @@ function makeLevels() {
     {
       name:"24 - SOLID FLOOR",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,290],
+      spawn:[30,296],
+      door:[548,282],
       platforms:[
         {x:0, y:320, w:600, h:40},
       ],
@@ -897,8 +897,8 @@ function makeLevels() {
     {
       name:"25 - THE END (for real)",
       bg:'#e8a84a',
-      spawn:[30,290],
-      door:[548,168],
+      spawn:[30,296],
+      door:[548,170],
       platforms:[
         {x:0,   y:320, w:155, h:40},
         {x:205, y:298, w:115, h:20},
@@ -1075,48 +1075,22 @@ function update() {
   // if door animation is running, only advance it (no movement/death)
   if (doorAnim) {
     doorAnim.timer++;
-
     if (doorAnim.phase === 'opening') {
-      // Door swings fully open over 24 frames — player stands still
+      // door swings open over 18 frames, player stays put
       p.vx = 0; p.vy = 0;
-      if (doorAnim.timer >= 24) {
-        // Door is now fully open — hold it open, start walking player in
-        doorAnim.phase = 'walking';
-        doorAnim.timer = 0;
-        doorAnim.targetX = doorAnim.x + (26 - p.w) / 2;
-        doorAnim.targetY = doorAnim.y + (38 - p.h);
+      if (doorAnim.timer >= 18) {
+        // snap player into door centre, start entering
+        p.x = doorAnim.x + (26 - p.w) / 2;
+        p.y = doorAnim.y + (38 - p.h) / 2;
+        doorAnim.phase = 'entering'; doorAnim.timer = 0;
       }
-
-    } else if (doorAnim.phase === 'walking') {
-      // Player walks toward the door automatically
-      p.vy = 0;
-      const ddx = doorAnim.targetX - p.x;
-      // Walk at a natural pace
-      const walkSpeed = 2.0;
-      if (Math.abs(ddx) > 1) {
-        p.x += Math.sign(ddx) * Math.min(Math.abs(ddx), walkSpeed);
-      } else {
-        p.x = doorAnim.targetX;
-      }
-      // Once player is lined up, start shrinking them into the door
-      if (Math.abs(ddx) <= 1 && doorAnim.timer >= 8) {
-        doorAnim.phase = 'entering';
-        doorAnim.timer = 0;
-      }
-
     } else if (doorAnim.phase === 'entering') {
-      // Player shrinks/fades as they step through the doorway
-      // Door stays fully open during this phase
-      // After a short pause, door closes
-      if (doorAnim.timer >= 22) {
-        doorAnim.phase = 'closing';
-        doorAnim.timer = 0;
+      // player is inside door for 18 frames
+      if (doorAnim.timer >= 18) {
+        doorAnim.phase = 'closing'; doorAnim.timer = 0;
       }
-
     } else if (doorAnim.phase === 'closing') {
-      // Door swings shut behind the player
-      p.vx = 0; p.vy = 0;
-      if (doorAnim.timer >= 28) {
+      if (doorAnim.timer >= 22) {
         doorAnim = null;
         markLevelBeaten(curLevel);
         curLevel++;
@@ -1482,67 +1456,70 @@ function drawDoor(x, y) {
   const isAnimating = doorAnim && doorAnim.x === x && doorAnim.y === y;
 
   // How open is the door? 0=fully closed, 1=fully open
-  let openAmt = 0; // default: closed
+  let openAmt = 1.0; // default: open
   if (isAnimating) {
     if (doorAnim.phase === 'opening') {
-      // ease open
-      const t = doorAnim.timer / 24;
-      openAmt = 1 - Math.pow(1 - t, 2); // ease out
-    } else if (doorAnim.phase === 'walking' || doorAnim.phase === 'entering') {
-      openAmt = 1.0; // fully open while player walks in
+      openAmt = doorAnim.timer / 18; // swings open
     } else if (doorAnim.phase === 'closing') {
-      // ease closed
-      const t = doorAnim.timer / 28;
-      openAmt = 1 - (t * t); // ease in
+      openAmt = 1.0 - (doorAnim.timer / 22); // swings shut
     }
+    // 'entering' phase: stays fully open
   }
 
-  // ── door frame ──
+  // ── draw frame/surround ──
   ctx.fillStyle = '#cc9944';
   ctx.fillRect(x, y, DW, DH);
   ctx.fillStyle = '#ffcc66';
   ctx.fillRect(x, y, DW, 4); // top trim
 
-  // ── dark interior ──
-  ctx.fillStyle = '#110800';
+  // ── dark interior behind door ──
+  ctx.fillStyle = '#221100';
   ctx.fillRect(x+3, y+4, DW-6, DH-4);
 
-  // ── door panel (hinge on right, swings left) ──
+  // ── door panel (perspective swing: hinge on RIGHT, opens to the LEFT) ──
+  // When open, panel is very thin on the right. When closed, fills full interior.
+  // We simulate perspective by drawing a trapezoid-like shape using canvas transforms.
   const innerW = DW - 6;
-  const panelW = Math.round(innerW * (1 - openAmt));
+  const panelW = Math.round(innerW * (1 - openAmt)); // 0 when open, full when closed
 
   if (panelW > 0) {
-    ctx.fillStyle = '#5a2a00';
+    // Back face of door (slightly darker, visible when swinging)
+    ctx.fillStyle = '#3a1a00';
     ctx.fillRect(x+3, y+4, panelW, DH-4);
-    // highlight on leading edge
-    ctx.fillStyle = '#996633';
+    // Front face highlight strip on leading edge
+    ctx.fillStyle = '#885522';
     ctx.fillRect(x+3, y+4, Math.min(3, panelW), DH-4);
-    // wood grain
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
-    for (let gi = 1; gi < 4 && gi*5 < panelW; gi++) {
-      ctx.fillRect(x+3+gi*5, y+6, 1, DH-8);
+    // Wood grain lines
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    for (let gi = 1; gi < 3 && gi*4 < panelW; gi++) {
+      ctx.fillRect(x+3+gi*4, y+6, 1, DH-8);
     }
-    // knob moves with panel
+  }
+
+  // knob on the LEFT edge of panel (moves as door swings)
+  if (panelW > 4) {
     ctx.fillStyle = '#ffcc00';
     ctx.beginPath();
     ctx.arc(x+3+Math.min(panelW-4, innerW-4), y+22, 3, 0, Math.PI*2);
     ctx.fill();
-  } else {
-    // door fully open — knob on far right of frame
+  } else if (openAmt > 0.85) {
+    // knob visible on right side of frame when door is open
     ctx.fillStyle = '#ffcc00';
     ctx.beginPath();
-    ctx.arc(x+DW-5, y+22, 3, 0, Math.PI*2);
+    ctx.arc(x+DW-6, y+22, 3, 0, Math.PI*2);
     ctx.fill();
   }
 
-  // ── player silhouette fading in when entering ──
+  // ── player silhouette inside door during 'entering' phase ──
   if (isAnimating && doorAnim.phase === 'entering') {
-    const alpha = Math.min(0.9, doorAnim.timer / 10);
+    const alpha = Math.min(0.85, doorAnim.timer / 8);
     ctx.globalAlpha = alpha;
-    ctx.fillStyle = '#080400';
-    ctx.fillRect(x+6, y+10, 12, 20); // body
+    ctx.fillStyle = '#110800';
+    // body
+    ctx.fillRect(x+7, y+12, 10, 18);
+    // head
     ctx.beginPath();
-    ctx.arc(x+12, y+8, 5, 0, Math.PI*2); // head
+    ctx.arc(x+12, y+10, 5, 0, Math.PI*2);
     ctx.fill();
     ctx.globalAlpha = 1;
   }
@@ -1557,12 +1534,6 @@ function drawPlayer() {
     p.deadTimer--;
     return;
   }
-
-  // Fade player out when entering the door
-  if (doorAnim && doorAnim.phase === 'entering') {
-    ctx.globalAlpha = Math.max(0, 1 - (doorAnim.timer / 14));
-  }
-
   const px = Math.round(p.x), py = Math.round(p.y);
   ctx.fillStyle = '#e8d5b0';
   ctx.fillRect(px, py, p.w, p.h);
@@ -1574,8 +1545,6 @@ function drawPlayer() {
   ctx.fillStyle = '#4466aa';
   ctx.fillRect(px+2,   py+p.h, 6, 4+lp);
   ctx.fillRect(px+p.w-8, py+p.h, 6, 4-lp);
-
-  ctx.globalAlpha = 1;
 }
 
 function render() {
