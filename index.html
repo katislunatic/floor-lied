@@ -265,6 +265,15 @@ body {
   cursor:pointer;
 }
 #lsBackBtn:hover { background:#fff8c0; }
+#lsResetBtn {
+  font-size:7px; padding:8px 12px;
+  background:rgba(180,30,30,0.85); color:#ffcccc;
+  border:3px solid #8b0000;
+  box-shadow:3px 3px 0 #5a0000;
+  font-family:'Press Start 2P', monospace;
+  cursor:pointer;
+}
+#lsResetBtn:hover { background:rgba(220,40,40,0.95); }
 /* scrollable path area */
 #lsScroll {
   position:relative; z-index:2;
@@ -336,6 +345,20 @@ body {
   <div id="lsHeader">
     <button id="lsBackBtn">← BACK</button>
     <div id="lsTitle">SELECT LEVEL</div>
+    <button id="lsResetBtn">🗑 RESET</button>
+  </div>
+
+  <!-- confirm reset popup -->
+  <div id="lsResetConfirm" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+    z-index:99; align-items:center; justify-content:center; flex-direction:column;">
+    <div style="font-family:'Press Start 2P',monospace; font-size:11px; color:#f0c060;
+      text-shadow:2px 2px 0 #3a0500; margin-bottom:24px; text-align:center; line-height:2;">
+      WIPE ALL PROGRESS?<br><span style="font-size:8px;color:#c07830;">this cannot be undone</span>
+    </div>
+    <div style="display:flex; gap:16px;">
+      <button class="pause-btn" id="lsResetConfirmYes">✓ YES</button>
+      <button class="pause-btn" id="lsResetConfirmNo">✗ NO</button>
+    </div>
   </div>
   <div id="lsScroll">
     <div id="lsPath">
@@ -1908,6 +1931,20 @@ function showLevelSelect() {
   document.getElementById('levelSelectOverlay').style.display = 'flex';
   buildLevelSelect();
 }
+
+document.getElementById('lsResetBtn').addEventListener('click', () => {
+  const confirm = document.getElementById('lsResetConfirm');
+  confirm.style.display = 'flex';
+});
+document.getElementById('lsResetConfirmNo').addEventListener('click', () => {
+  document.getElementById('lsResetConfirm').style.display = 'none';
+});
+document.getElementById('lsResetConfirmYes').addEventListener('click', () => {
+  maxUnlocked = 0;
+  saveProgress();
+  document.getElementById('lsResetConfirm').style.display = 'none';
+  buildLevelSelect(); // rebuild to show all locked
+});
 
 function hideLevelSelect() {
   document.getElementById('levelSelectOverlay').style.display = 'none';
